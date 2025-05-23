@@ -4,11 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Type extends Model
+class Topic extends Model
 {
     protected $guarded = [];
 
-     public function question()
+    public function chapter()
+    {
+        return $this->belongsTo(Chapter::class);
+    }
+
+    public function question()
     {
         return $this->hasMany(Question::class);
     }

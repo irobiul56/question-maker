@@ -103,7 +103,7 @@ const isRouteActive = (patterns) => {
         </li>
 
         <li>
-          <NavLink href="#"
+          <NavLink :href="route('topic.index')" :active="isRouteActive(['topic', 'topic.*'])"
             class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
             :class="isCollapsed ? 'justify-center px-2' : 'px-3'">
             <div class="flex items-center">

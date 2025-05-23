@@ -12,4 +12,9 @@ class Chapter extends Model
     {
         return $this->belongsTo(Subject::class);
     }
+
+    public function topic()
+    {
+        return $this->hasMany(Topic::class);
+    }
 }

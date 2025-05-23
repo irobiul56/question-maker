@@ -6,7 +6,9 @@ use App\Http\Controllers\ClassController;
 use App\Http\Controllers\EducationLevelController;
 use App\Http\Controllers\LevelController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\SubjectController;
+use App\Http\Controllers\TopicController;
 use App\Http\Controllers\TypeController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -40,6 +42,8 @@ Route::middleware('auth') -> group(function () {
         Route::resource('subject', SubjectController::class);
         Route::get('/classes/by-education/{id}', [SubjectController::class, 'getClassesByEducation'])->name('classes.by-education');
         Route::resource('chapter', ChapterController::class);
+        Route::resource('topic', TopicController::class);
+        Route::resource('question', QuestionController::class);
 
 
         });
