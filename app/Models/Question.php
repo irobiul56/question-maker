@@ -13,6 +13,21 @@ class Question extends Model
         return $this->belongsTo(Topic::class);
     }
 
+    public function academicClass()
+    {
+        return $this->belongsTo(AcademicClass::class);
+    }
+
+     public function subject()
+    {
+        return $this->belongsTo(Subject::class);
+    }
+
+     public function chapter()
+    {
+        return $this->belongsTo(Chapter::class);
+    }
+
     public function lavel()
     {
         return $this->belongsTo(Level::class);
@@ -20,7 +35,7 @@ class Question extends Model
 
     public function type()
     {
-        return $this->belongsTo(Type::class);
+        return $this->belongsToMany(Type::class);
     }
 
     public function board()
@@ -31,5 +46,10 @@ class Question extends Model
     public function options()
     {
         return $this->hasMany(QuestionOption::class);
+    }
+
+    public function cqoptions()
+    {
+        return $this->hasMany(Cqoption::class);
     }
 }

@@ -12,14 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('questions', function (Blueprint $table) {
-            $table->id();
+             $table->id();
+            $table->foreignId('academic_classes_id')->constrained()->onDelete('cascade');
+            $table->foreignId('subject_id')->constrained()->onDelete('cascade');
+            $table->foreignId('chapter_id')->constrained()->onDelete('cascade');
             $table->foreignId('topic_id')->constrained()->onDelete('cascade');
-            $table->foreignId('type_id')->constrained()->onDelete('cascade');
             $table->foreignId('level_id')->constrained()->onDelete('cascade');
             $table->foreignId('board_id')->constrained()->onDelete('cascade');
             $table->enum('format', ['mcq', 'cq','mix']);
             $table->text('question_text');
-            $table->text('explanation')->nullable(); // for illustrated, detailed questions
+            $table->text('explanation')->nullable();
+            $table->text('mark')->nullable();
             $table->timestamps();
         });
     }

@@ -4,6 +4,7 @@ use App\Http\Controllers\BoardController;
 use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\EducationLevelController;
+use App\Http\Controllers\FrontendController;
 use App\Http\Controllers\LevelController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuestionController;
@@ -47,7 +48,13 @@ Route::middleware('auth') -> group(function () {
 
 
         });
-});
+
+    });
+    Route::prefix('user')->group(function(){
+        Route::get('/question-making', [FrontendController::class, 'qstIndex'])-> name('qstIndex');
+        Route::get('/selected-question', [FrontendController::class, 'sltquestion'])-> name('sltquestion');
+
+    });
 
 require __DIR__.'/auth.php';
 
