@@ -52,4 +52,9 @@ class Question extends Model
     {
         return $this->hasMany(Cqoption::class);
     }
+
+    public function savedQuestions()
+    {
+        return $this->belongsToMany(SavedQuestion::class, 'question_savedquestion');
+    }
 }

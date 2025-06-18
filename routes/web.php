@@ -49,10 +49,14 @@ Route::middleware('auth') -> group(function () {
 
         });
 
-    });
-    Route::prefix('user')->group(function(){
-        Route::get('/question-making', [FrontendController::class, 'qstIndex'])-> name('qstIndex');
-        Route::get('/selected-question', [FrontendController::class, 'sltquestion'])-> name('sltquestion');
+        Route::prefix('user')->group(function(){
+            Route::get('/question-making', [FrontendController::class, 'qstIndex'])-> name('qstIndex');
+            Route::get('/selected-question', [FrontendController::class, 'sltquestion'])-> name('sltquestion');
+            Route::post('/save-questions', [FrontendController::class, 'saveQuestions'])->name('save.questions');
+            
+            //question setting
+            Route::get('/question-setting', [FrontendController::class, 'qstSetting'])-> name('qstSetting');
+        });
 
     });
 

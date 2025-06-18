@@ -11,6 +11,7 @@ const subjects = ref(props.subjects || []);
 const chapters = ref(props.chapters || []);
 
 // Selected values
+const examName = ref('');
 const selectedEducation = ref('');
 const selectedClass = ref('');
 const selectedSubject = ref('');
@@ -39,15 +40,17 @@ const filteredChapters = computed(() => {
 });
 
 const generateQuestions = () => {
-    if (!selectedChapter.value) {
-        alert('Please select a chapter first');
+    if (!selectedChapter.value || !examName.value) {
+        alert('Please fill all required fields');
         return;
     }
 
     router.get(route('sltquestion'), {
+        exam_name: examName.value,
         chapter_id: selectedChapter.value,
         type: selectedType.value,
         count: questionCount.value,
+        
     });
 };
 </script>
@@ -104,7 +107,7 @@ const generateQuestions = () => {
       
        <form @submit.prevent="generateQuestions" class="space-y-4">
                 <div>
-                    <input type="text" placeholder="প্রোগ্রাম/পরীক্ষার নাম লিখুন *" 
+                    <input v-model="examName" type="text" placeholder="প্রোগ্রাম/পরীক্ষার নাম লিখুন *" 
                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
                 </div>
                 
