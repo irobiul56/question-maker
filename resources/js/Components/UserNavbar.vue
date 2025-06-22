@@ -9,7 +9,7 @@ const showMobileMenu = ref(false);
 </script>
 
 <template>
-  <nav class="bg-white text-gray-800 shadow-sm p-4 flex justify-between items-center border-b border-gray-100">
+  <nav class="bg-white text-gray-800 shadow-sm p-4 flex justify-between sticky top-0 items-center border-b border-gray-100">
     <div class="flex items-center space-x-2 md:space-x-4">
       <button 
         @click="emit('toggle-sidebar')" 

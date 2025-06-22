@@ -609,7 +609,7 @@ const saveQuestions = () => {
 
     router.post(route('save.questions'), {
         question_ids: selectedQuestions.value,
-        exam_name: examName.value // Using the exam name from URL
+        exam_name: examName.value,
     }, {
         preserveScroll: true,
         onSuccess: () => {

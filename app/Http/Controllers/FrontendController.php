@@ -11,7 +11,7 @@ use App\Models\Question;
 use App\Models\Savedquestion;
 use App\Models\Subject;
 use App\Models\Type;
-use DB;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -120,7 +120,7 @@ class FrontendController extends Controller
 
     public function saveQuestions(Request $request)
     {
-        dd($request -> all());
+        // dd(Auth::id());
         $request->validate([
             'exam_name' => 'required|string|max:255',
             'question_ids' => 'required|array',
@@ -159,12 +159,18 @@ class FrontendController extends Controller
             ->with([
                 'user:id,name',
                 'questions' => function($query) {
-                    $query->with(['options:id,question_id,option_text'])
+                    $query->with([
+                        'options',
+                        'academicClass',
+                        'subject',
+                        'chapter'
+                        ])
                         ->latest();
                 }
             ])
             ->latest()
             ->first();
+        // dd($latestExam);
 
         return Inertia::render('UserDashboard/Questions/QuestionSetting', [
             'savedquestion' => $latestExam ? [$latestExam] : [] // Wrap single item in array

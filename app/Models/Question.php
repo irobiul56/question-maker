@@ -15,7 +15,7 @@ class Question extends Model
 
     public function academicClass()
     {
-        return $this->belongsTo(AcademicClass::class);
+        return $this->belongsTo(AcademicClass::class, 'academic_classes_id');
     }
 
      public function subject()
@@ -57,4 +57,5 @@ class Question extends Model
     {
         return $this->belongsToMany(SavedQuestion::class, 'question_savedquestion');
     }
+    
 }

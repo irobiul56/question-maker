@@ -1,6 +1,9 @@
 <script setup>
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue';
 import { Head } from '@inertiajs/vue3';
+import { ref, onMounted, computed, nextTick  } from 'vue';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const props = defineProps({
     savedquestion: {
@@ -15,6 +18,191 @@ const getBanglaLetter = (index) => {
     return banglaLetters[index] || String.fromCharCode(2433 + index);
 };
 
+const optionStyle = ref('circle') // can be 'circle', 'filled-circle', 'square', 'bangla'
+const showAnswers = ref(false);
+const address = ref(false);
+const instruction = ref(true);
+const subject = ref(true);
+const chapter = ref(true);
+const setcode = ref(true);
+
+function setOptionStyle(style) {
+  optionStyle.value = style
+}
+
+const currentSet = ref('ক') // Initial set
+const sets = ['ক', 'খ', 'গ', 'ঘ'] // Available sets
+
+
+// Create a local reactive copy of questions
+const localQuestions = ref(JSON.parse(JSON.stringify(props.savedquestion)))
+
+function shuffleQuestions() {
+  // 1. Change to a random set
+  currentSet.value = sets[Math.floor(Math.random() * sets.length)]
+  
+  // 2. Create a deep copy of questions to shuffle
+  const questionsCopy = JSON.parse(JSON.stringify(localQuestions.value[0].questions))
+  
+  // 3. Shuffle questions array
+  for (let i = questionsCopy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [questionsCopy[i], questionsCopy[j]] = [questionsCopy[j], questionsCopy[i]];
+  }
+  
+  // 4. Shuffle options within each question
+  questionsCopy.forEach(question => {
+    if (question.options) {
+      for (let i = question.options.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [question.options[i], question.options[j]] = [question.options[j], question.options[i]];
+      }
+    }
+  })
+  
+  // 5. Update the local reactive copy
+  localQuestions.value = [{ questions: questionsCopy }]
+}
+
+// Font selection
+const selectedFont = ref('bangla')
+const fontClasses = {
+  'bangla': 'bangla',
+  'SolaimanLipi': 'font-solaiman-lipi',
+  'Kalpurush': 'font-kalpurush',
+  'Times New Roman': 'font-times-new-roman'
+}
+
+// Dynamically load font CSS
+onMounted(() => {
+  const fontLinks = [
+    'https://fonts.maateen.me/siyam-rupali/font.css',
+    'https://fonts.maateen.me/kalpurush/font.css',
+    'https://fonts.maateen.me/solaiman-lipi/font.css'
+  ]
+  
+  fontLinks.forEach(link => {
+    const existing = document.querySelector(`link[href="${link}"]`)
+    if (!existing) {
+      const fontLink = document.createElement('link')
+      fontLink.href = link
+      fontLink.rel = 'stylesheet'
+      document.head.appendChild(fontLink)
+    }
+  })
+})
+
+const fontSize = ref(14) // Default font size
+const minFontSize = 10
+const maxFontSize = 24
+
+function increaseFontSize() {
+  if (fontSize.value < maxFontSize) {
+    fontSize.value++
+  }
+}
+
+function decreaseFontSize() {
+  if (fontSize.value > minFontSize) {
+    fontSize.value--
+  }
+}
+
+
+const columnCount = ref(2) // Default to 2 columns
+
+function setColumns(count) {
+  columnCount.value = count
+}
+
+const showColumnDivider = ref(true) 
+
+
+// Calculate total MCQ questions
+const totalMCQ = computed(() => {
+  if (!props.savedquestion.length) return 0
+  return props.savedquestion[0].questions.filter(q => q.format === 'mcq').length
+})
+
+// Convert English numbers to Bengali numerals
+const toBengaliNumerals = (num) => {
+  const numerals = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯']
+  return num.toString().replace(/[0-9]/g, digit => numerals[digit])
+}
+
+const totalTime = computed(() => {
+  return `${toBengaliNumerals(totalMCQ.value)} মিনিট`
+})
+
+const fullMarks = computed(() => {
+  return toBengaliNumerals(totalMCQ.value)
+})
+
+const isPrinting = ref(false);
+const printError = ref(false);
+
+const printQuestions = () => {
+  isPrinting.value = true;
+  printError.value = false;
+
+  try {
+    // Store the original HTML and scroll position
+    const originalHTML = document.body.innerHTML;
+    const originalScrollPos = window.scrollY;
+
+    // Get the questions container
+    const element = document.getElementById('questions-container');
+    const clone = element.cloneNode(true);
+
+    // Create a print-specific container
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    printContainer.appendChild(clone);
+
+    // Apply print styles
+    const printStyles = document.createElement('style');
+    printStyles.innerHTML = `
+      @page { size: A4; margin: 10mm; }
+      body { background: white !important; }
+      #print-container {
+        width: 210mm !important;
+        margin: 0 auto !important;
+        padding: 10mm !important;
+      }
+      .break-inside-avoid { 
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+    `;
+
+    // Replace body content with just what we want to print
+    document.body.innerHTML = '';
+    document.body.appendChild(printStyles);
+    document.body.appendChild(printContainer);
+
+    // Wait for DOM update
+    setTimeout(() => {
+      window.print();
+
+      // Restore original content after printing
+      document.body.innerHTML = originalHTML;
+      window.scrollTo(0, originalScrollPos);
+      
+      // Re-initialize any Vue event listeners if needed
+      nextTick(() => {
+        isPrinting.value = false;
+      });
+    }, 300);
+
+  } catch (error) {
+    console.error('Print failed:', error);
+    printError.value = true;
+    isPrinting.value = false;
+    // Attempt to restore original content even if print fails
+    document.body.innerHTML = originalHTML;
+  }
+};
+
 </script>
 
 <template>
@@ -22,6 +210,25 @@ const getBanglaLetter = (index) => {
     <Head title="User Dashboard" />
 
     <UserDashboardLayout>
+        <!-- Error Alert -->
+        <div v-if="printError" class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+            <div class="bg-white p-6 rounded-lg shadow-lg max-w-md">
+            <div class="text-center">
+                <svg class="mx-auto h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 bangla mt-2">প্রিন্টে সমস্যা হয়েছে</h3>
+                <div class="mt-2">
+                <p class="text-sm text-gray-500 bangla">আবার চেষ্টা করুন</p>
+                </div>
+                <div class="mt-4">
+                <button @click="printError = false" type="button" class="bangla inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm">
+                    ঠিক আছে
+                </button>
+                </div>
+            </div>
+            </div>
+        </div>
         <div class="bangla flex flex-col lg:flex-row justify-center gap-5 print:gap-0 mx-4 print:mx-0">
         <!-- Main content -->
         <div class="w-full max-w-3xl p-4">
@@ -46,28 +253,29 @@ const getBanglaLetter = (index) => {
                 <span>ডাউনলোড</span>
             </button>
         </div>
-            <div class="w-full p-[5mm] md:p-[10mm] print:p-0 print:w-full print:shadow-none bg-white">
+            <div id="questions-container" :class="[fontClasses[selectedFont], 'question-text']" class="break-inside-avoid first-letter:w-full p-[5mm] md:p-[10mm] print:p-0 print:w-full print:shadow-none bg-white">
                 <!-- Header section -->
                 <div class="py-2 print:py-0">
                     <h1 class="text-xl font-bold text-center">Jamalpur Kaliakair M E H Arif Institute</h1>
-                    <h3 class="text-xl font-bold text-center">Jamalpur, Kaliakair, Gazipur</h3>
+                    <h3 v-if="address === true" class="text-xl font-bold text-center">Jamalpur, Kaliakair, Gazipur</h3>
                     <div class="relative">
-                        {{savedquestion}}
+                    
                         <p class="text-center text-lg">{{ savedquestion[0]?.exam_name }}</p>
-                        <p class="text-center text-lg">নবম/দশম</p>
-                        <p class="text-center truncate">বাংলা ১ম পত্র</p>
-                        <p class="text-center truncate">গদ্য ১ - সুভা</p>
-                        <div class="absolute top-0 right-0 flex">
+                        <p class="text-center text-lg">{{ savedquestion[0]?.questions[0]?.academic_class?.name }}</p>
+                        <p v-if="subject" class="text-center truncate">{{ savedquestion[0]?.questions[0]?.subject?.name }}</p>
+                        <p v-if="chapter" class="text-center truncate">{{ savedquestion[0]?.questions[0]?.chapter?.name || '' }}</p>
+                         <!-- Set indicator -->
+                        <div v-if="setcode" class="absolute top-0 right-0 flex">
                             <p class="border px-2 border-gray-500">সেট</p>
-                            <p class="border-y border-r px-2 border-gray-500">ক</p>
+                            <p class="border-y border-r px-2 border-gray-500">{{ currentSet }}</p>
                         </div>
                     </div>
                     <div class="flex justify-between relative">
-                        <div class="flex items-center">সময়—<p class="mx-1">৪০ মিনিট</p></div>
-                        <div>পূর্ণমান—<span class="mx-1">৩০</span></div>
+                        <div class="flex items-center">সময়—<p class="mx-1">{{ totalTime }}</p></div>
+                        <div>পূর্ণমান—<span class="mx-1">{{ fullMarks }}</span></div>
                     </div>
                     <hr>
-                    <div class="text-center text-sm my-1">
+                    <div v-if="instruction" class="text-center text-sm my-1">
                         <span><i><span class="bangla-bold">দ্রষ্টব্যঃ</span> সরবরাহকৃত নৈর্ব্যত্তিক অভীক্ষার উত্তরপত্রে প্রশ্নের ক্রমিক নম্বরের বিপরীতে প্রদত্ত বর্ণসম্বলিত বৃত্ত সমুহ হতে সঠিক উত্তরের বৃত্তটি</i> 
                         (<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" class="inline-block" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
                             <path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512z"></path>
@@ -77,11 +285,20 @@ const getBanglaLetter = (index) => {
                 </div>
 
                 <!-- Questions section -->
-                 <div style="font-size: 14px;">
-                    <div v-if="savedquestion.length > 0" class="relative flex-1 columns-2 lg:columns-2 print:columns-2" style="column-rule: 1px solid rgba(0, 0, 0, 0.2);">
-                        <!-- Single exam (since we only fetch latest) -->
-                        <div v-for="(question, questionIndex) in savedquestion[0].questions" :key="questionIndex" 
-                            class="bg-white relative p-0.5 hover:bg-gray-50 rounded group">
+                 <div :style="{ fontSize: `${fontSize}px` }" class="question-content">
+                    <div v-if="savedquestion.length > 0" class="relative flex-1 print:columns-2"
+                        :class="{
+                            'columns-1': columnCount === 1,
+                            'columns-2 lg:columns-2': columnCount === 2,
+                            'columns-3 lg:columns-3': columnCount === 3
+                        }"
+                        :style="{
+                            'column-rule': showColumnDivider ? '1px solid rgba(0, 0, 0, 0.2)' : 'none',
+                            'column-gap': showColumnDivider ? '1.5rem' : '0.5rem'
+                        }">
+
+                        <div v-for="(question, questionIndex) in localQuestions[0].questions" :key="questionIndex" 
+                            class="bg-white relative p-0.5 hover:bg-gray-50 rounded group break-inside-avoid">
                             <div class="flex items-baseline gap-x-2">
                                 <span class="bangla-bold text-gray-900">{{ questionIndex + 1 }}.</span>
                                 <div class="flex flex-wrap justify-between items-center w-full">
@@ -90,11 +307,30 @@ const getBanglaLetter = (index) => {
                             </div>
                             <div class="relative grid grid-cols-2 ml-7 group">
                                 <div v-for="(option, optionIndex) in question.options" :key="optionIndex" 
-                                :class="{ 'bg-green-100 border-green-300': option.is_correct }" class="option flex flex-1 items-baseline">
-                                    <div :class="{ 'bg-green-600 text-white': option.is_correct }" class="h-4 w-4 border border-gray-500 shrink-0 mr-1 rounded-full flex justify-center items-center">
+                                 class="option flex flex-1 items-baseline">
+                                    <div class="shrink-0 mr-1 flex justify-center items-center"
+                                    :class="{
+                                    'h-4 w-4 border border-gray-500 rounded-full': optionStyle === 'circle',
+                                    'text-black': optionStyle === 'parens',
+                                    'text-black': optionStyle === 'dot',
+                                    'text-black': optionStyle === 'paren',
+                                    'bg-black text-white': showAnswers && option.is_correct && optionStyle === 'circle',
+                                    'font-bold underline': showAnswers && option.is_correct && optionStyle !== 'circle'
+                                    }">
+                                    <span v-if="optionStyle === 'circle'" class="text-xs">
                                         {{ getBanglaLetter(optionIndex) }}
-                                    </div>
-                                    <div>{{ option.option_text }}</div>
+                                    </span>
+                                    <span v-else-if="optionStyle === 'parens'">
+                                        ({{ getBanglaLetter(optionIndex) }})
+                                    </span>
+                                    <span v-else-if="optionStyle === 'dot'">
+                                        {{ getBanglaLetter(optionIndex) }}.
+                                    </span>
+                                    <span v-else-if="optionStyle === 'paren'">
+                                        {{ getBanglaLetter(optionIndex) }})
+                                    </span>
+                                </div>
+                                    <div>{{ option.option_text }} </div>
                                 </div>
                             </div>
                         </div>
@@ -103,11 +339,12 @@ const getBanglaLetter = (index) => {
                         No saved questions found
                     </div>
                 </div>
+                
             </div>
         </div>
 
         <!-- Sidebar settings -->
-        <div class="hidden lg:block fixed inset-y-0 right-0 w-72 bg-white overflow-y-auto border-l z-10 font-10">
+        <div class="hidden lg:block fixed mt-20 inset-y-0 right-0 w-72 bg-white overflow-y-auto border-l z-10 font-10">
             <div class="relative overflow-hidden">
                 <div class="bg-white backdrop-blur-lg p-4">
                     <h1 class="py-2 flex items-center gap-2 justify-center rounded text-center bg-gray-50 mb-2 shadow">
@@ -117,24 +354,30 @@ const getBanglaLetter = (index) => {
                         <span class="text-lg">সেটিংস</span>
                     </h1>
                     
-                    <button class="hover:bg-green-400 bg-green-500 transition-all py-2 rounded w-full text-center text-white flex items-center gap-2 justify-center">
-                        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32V274.7l-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L288 274.7V32zM64 352c-35.3 0-64 28.7-64 64v32c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V416c0-35.3-28.7-64-64-64H346.5l-45.3 45.3c-25 25-65.5 25-90.5 0L165.5 352H64zm368 56a24 24 0 1 1 0 48 24 24 0 1 1 0-48z"></path>
-                        </svg>
-                        ডাউনলোড
+                    <!-- Print Button -->
+                    <button 
+                      @click="printQuestions"
+                      :disabled="isPrinting"
+                      class="hover:bg-blue-400 bg-blue-500 transition-all py-2 rounded w-full text-center text-white flex items-center gap-2 justify-center"
+                    >
+                      <svg v-if="!isPrinting" stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M400 96V56c0-13.3-10.7-24-24-24H136c-13.3 0-24 10.7-24 24v40H24c-13.3 0-24 10.7-24 24v104c0 13.3 10.7 24 24 24h8v96c0 13.3 10.7 24 24 24h400c13.3 0 24-10.7 24-24v-96h8c13.3 0 24-10.7 24-24V120c0-13.3-10.7-24-24-24h-88zm-8 0H120V56h272v40zM104 392H56v-80h48v80zm344 0h-48v-80h48v80zm40-128H24V120h432v144zm-40 64c13.3 0 24-10.7 24-24s-10.7-24-24-24-24 10.7-24 24 10.7 24 24 24z"></path>
+                      </svg>
+                      <span v-if="!isPrinting">প্রিন্ট করুন</span>
+                      <span v-else class="bangla">প্রিন্ট প্রস্তুত হচ্ছে...</span>
                     </button>
                     
                     <!-- Answer sheet toggle -->
                     <div class="bg-gray-100 p-2 rounded flex justify-between items-center my-2">
                         <span class="bangla">উত্তরপত্র</span>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer">
+                            <input type="checkbox" v-model="showAnswers" class="sr-only peer">
                             <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                         </label>
                     </div>
                     
                     <!-- Editing mode toggle -->
-                    <div class="bg-gray-100 p-2 rounded my-2">
+                    <!-- <div class="bg-gray-100 p-2 rounded my-2">
                         <div class="flex justify-between items-center">
                             <span class="bangla">এডিটিং মোড</span>
                             <label class="relative inline-flex items-center cursor-pointer">
@@ -142,10 +385,10 @@ const getBanglaLetter = (index) => {
                                 <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                             </label>
                         </div>
-                    </div>
+                    </div> -->
                     
                     <!-- Sheet toggle -->
-                    <div>
+                    <!-- <div>
                         <div class="relative bg-gray-100 p-2 rounded flex justify-between items-center my-2">
                             <span class="bangla">শীট</span>
                             <label class="relative inline-flex items-center cursor-pointer">
@@ -153,18 +396,41 @@ const getBanglaLetter = (index) => {
                                 <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                             </label>
                         </div>
-                    </div>
+                    </div> -->
                     
                     <!-- Option style selector -->
                     <div class="relative bg-gray-100 p-2 rounded my-2">
                         <p class="bangla mb-2">অপশন স্টাইল</p>
                         <div class="flex gap-2">
-                            <div class="p-1 flex-1 flex justify-center items-center cursor-pointer bg-emerald-600">
-                                <div class="h-5 w-5 border border-gray-500 rounded-full bg-white"></div>
+                            <!-- Circle -->
+                            <div @click="setOptionStyle('circle')" 
+                                class="p-1 flex-1 flex justify-center items-center cursor-pointer rounded"
+                                :class="{ 'bg-emerald-600 text-white': optionStyle === 'circle', 'bg-white hover:bg-gray-100': optionStyle !== 'circle' }">
+                                <div class="h-5 w-5 border border-gray-500 rounded-full flex items-center justify-center">
+                                    ○
+                                </div>
                             </div>
-                            <div class="p-1 flex-1 flex justify-center items-center cursor-pointer bg-white hover:bg-emerald-100">.</div>
-                            <div class="p-1 flex-1 flex justify-center items-center cursor-pointer bg-white hover:bg-emerald-100">( )</div>
-                            <div class="p-1 flex-1 flex justify-center items-center cursor-pointer bg-white hover:bg-emerald-100">)</div>
+                            
+                            <!-- Parentheses () -->
+                            <div @click="setOptionStyle('parens')" 
+                                class="p-1 flex-1 flex justify-center items-center cursor-pointer rounded"
+                                :class="{ 'bg-emerald-600 text-white': optionStyle === 'parens', 'bg-white hover:bg-gray-100': optionStyle !== 'parens' }">
+                                ( )
+                            </div>
+                            
+                            <!-- Dot . -->
+                            <div @click="setOptionStyle('dot')" 
+                                class="p-1 flex-1 flex justify-center items-center cursor-pointer rounded"
+                                :class="{ 'bg-emerald-600 text-white': optionStyle === 'dot', 'bg-white hover:bg-gray-100': optionStyle !== 'dot' }">
+                                <span class="text-2xl leading-none">.</span>
+                            </div>
+                            
+                            <!-- Single Parenthesis ) -->
+                            <div @click="setOptionStyle('paren')" 
+                                class="p-1 flex-1 flex justify-center items-center cursor-pointer rounded"
+                                :class="{ 'bg-emerald-600 text-white': optionStyle === 'paren', 'bg-white hover:bg-gray-100': optionStyle !== 'paren' }">
+                                )
+                            </div>
                         </div>
                     </div>
                     
@@ -173,14 +439,14 @@ const getBanglaLetter = (index) => {
                         <div class="bg-gray-100 p-2 rounded flex justify-between items-center my-2">
                             <span class="bangla">ঠিকানা</span>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" class="sr-only peer">
+                                <input v-model="address" type="checkbox" class="sr-only peer">
                                 <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                             </label>
                         </div>
                     </div>
                     
                     <!-- Watermark toggle -->
-                    <div class="bg-gray-100 my-2 p-2">
+                    <!-- <div class="bg-gray-100 my-2 p-2">
                         <div class="rounded flex justify-between items-center">
                             <span class="bangla">জলছাপ</span>
                             <label class="relative inline-flex items-center cursor-pointer">
@@ -188,20 +454,21 @@ const getBanglaLetter = (index) => {
                                 <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                             </label>
                         </div>
-                    </div>
+                    </div> -->
                     
                     <!-- Shuffle button -->
                     <div>
-                        <div class="cursor-pointer bg-gray-100 hover:bg-emerald-600 hover:text-white flex justify-between items-center p-2 rounded my-2" tabindex="0">
-                            <p>শাফল করুন</p>
-                            <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M403.8 34.4c12-5 25.7-2.2 34.9 6.9l64 64c6 6 9.4 14.1 9.4 22.6s-3.4 16.6-9.4 22.6l-64 64c-9.2 9.2-22.9 11.9-34.9 6.9s-19.8-16.6-19.8-29.6V160H352c-10.1 0-19.6 4.7-25.6 12.8L284 229.3 244 176l31.2-41.6C293.3 110.2 321.8 96 352 96h32V64c0-12.9 7.8-24.6 19.8-29.6zM164 282.7L204 336l-31.2 41.6C154.7 401.8 126.2 416 96 416H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H96c10.1 0 19.6-4.7 25.6-12.8L164 282.7zm274.6 188c-9.2 9.2-22.9 11.9-34.9 6.9s-19.8-16.6-19.8-29.6V416H352c-30.2 0-58.7-14.2-76.8-38.4L121.6 172.8c-6-8.1-15.5-12.8-25.6-12.8H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H96c30.2 0 58.7 14.2 76.8 38.4L326.4 339.2c6 8.1 15.5 12.8 25.6 12.8h32V320c0-12.9 7.8-24.6 19.8-29.6s25.7-2.2 34.9 6.9l64 64c6 6 9.4 14.1 9.4 22.6s-3.4 16.6-9.4 22.6l-64 64z"></path>
-                            </svg>
+                        <div class="cursor-pointer bg-gray-100 hover:bg-emerald-600 hover:text-white flex justify-between items-center p-2 rounded my-2" 
+                            @click="shuffleQuestions" tabindex="0">
+                        <p>শাফল করুন</p>
+                        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M403.8 34.4c12-5 25.7-2.2 34.9 6.9l64 64c6 6 9.4 14.1 9.4 22.6s-3.4 16.6-9.4 22.6l-64 64c-9.2 9.2-22.9 11.9-34.9 6.9s-19.8-16.6-19.8-29.6V160H352c-10.1 0-19.6 4.7-25.6 12.8L284 229.3 244 176l31.2-41.6C293.3 110.2 321.8 96 352 96h32V64c0-12.9 7.8-24.6 19.8-29.6zM164 282.7L204 336l-31.2 41.6C154.7 401.8 126.2 416 96 416H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H96c10.1 0 19.6-4.7 25.6-12.8L164 282.7zm274.6 188c-9.2 9.2-22.9 11.9-34.9 6.9s-19.8-16.6-19.8-29.6V416H352c-30.2 0-58.7-14.2-76.8-38.4L121.6 172.8c-6-8.1-15.5-12.8-25.6-12.8H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H96c30.2 0 58.7 14.2 76.8 38.4L326.4 339.2c6 8.1 15.5 12.8 25.6 12.8h32V320c0-12.9 7.8-24.6 19.8-29.6s25.7-2.2 34.9 6.9l64 64c6 6 9.4 14.1 9.4 22.6s-3.4 16.6-9.4 22.6l-64 64z"></path>
+                        </svg>
                         </div>
                     </div>
                     
                     <!-- OMR toggle -->
-                    <div>
+                    <!-- <div>
                         <div class="bg-gray-100 p-2 rounded flex justify-between items-center my-2">
                             <span class="bangla">OMR সংযুক্ত</span>
                             <label class="relative inline-flex items-center cursor-pointer">
@@ -210,12 +477,12 @@ const getBanglaLetter = (index) => {
                             </label>
                         </div>
                     </div>
-                    
+                     -->
                     <!-- Instructions toggle -->
                     <div class="bg-gray-100 p-2 rounded flex justify-between items-center my-2">
                         <span class="bangla">নির্দেশনা</span>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer" checked>
+                            <input v-model="instruction" type="checkbox" class="sr-only peer" checked>
                             <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                         </label>
                     </div>
@@ -224,7 +491,7 @@ const getBanglaLetter = (index) => {
                     <div class="bg-gray-100 p-2 rounded flex justify-between items-center my-2">
                         <span class="bangla">বিষয়ের নাম</span>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer" checked>
+                            <input v-model="subject" type="checkbox" class="sr-only peer" checked>
                             <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                         </label>
                     </div>
@@ -233,106 +500,145 @@ const getBanglaLetter = (index) => {
                     <div class="bg-gray-100 p-2 rounded flex justify-between items-center my-2">
                         <span class="bangla">অধ্যায়ের নাম</span>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer" checked>
+                            <input v-model="chapter" type="checkbox" class="sr-only peer" checked>
                             <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                         </label>
                     </div>
                     
                     <!-- Important questions toggle -->
-                    <div class="bg-gray-100 p-2 rounded flex justify-between items-center my-2">
+                    <!-- <div class="bg-gray-100 p-2 rounded flex justify-between items-center my-2">
                         <span class="bangla">গুরুত্বপূর্ণ প্রশ্ন</span>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" class="sr-only peer">
                             <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                         </label>
-                    </div>
+                    </div> -->
                     
                     <!-- Set code toggle -->
                     <div class="bg-gray-100 p-2 rounded flex justify-between items-center my-2">
                         <span class="bangla">সেট কোড</span>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer" checked>
+                            <input v-model="setcode" type="checkbox" class="sr-only peer" checked>
                             <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                         </label>
                     </div>
                     
                     <!-- Title toggle -->
-                    <div class="bg-gray-100 p-2 rounded flex justify-between items-center my-2">
+                    <!-- <div class="bg-gray-100 p-2 rounded flex justify-between items-center my-2">
                         <span class="bangla">টাইটেল</span>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" class="sr-only peer">
                             <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                         </label>
-                    </div>
+                    </div> -->
                     
                     <!-- Question info toggle -->
-                    <div class="bg-gray-100 p-2 rounded flex justify-between items-center my-2">
+                    <!-- <div class="bg-gray-100 p-2 rounded flex justify-between items-center my-2">
                         <span class="bangla">প্রশ্নের তথ্য</span>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" class="sr-only peer">
                             <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                         </label>
-                    </div>
+                    </div> -->
                     
-                    <!-- Font selector -->
+                   <!-- Font Selector -->
                     <div class="bg-gray-100 my-2 p-2">
                         <div class="rounded justify-between items-center">
-                            <p class="bangla mb-1 text-center">ফন্ট পরিবর্তন</p>
-                            <select id="font-selector" class="w-full p-1 border rounded">
-                                <option value="Bangla">বাংলা</option>
-                                <option value="SolaimanLipi">সোলাইমান লিপি</option>
-                                <option value="Kalpurush">কালপুরুষ</option>
-                                <option value="roman">Times New Roman</option>
-                            </select>
+                        <p class="bangla mb-1 text-center">ফন্ট পরিবর্তন</p>
+                        <select 
+                            v-model="selectedFont"
+                            class="w-full p-1 border rounded bangla"
+                        >
+                            <option value="bangla">বাংলা</option>
+                            <option value="SolaimanLipi">সোলাইমান লিপি</option>
+                            <option value="Kalpurush">কালপুরুষ</option>
+                            <option value="Times New Roman">টাইমস নিউ রোমান</option>
+                        </select>
                         </div>
                     </div>
                     
-                    <!-- Font size -->
+                    <!-- Font size control -->
                     <div class="bg-gray-100 p-2 rounded flex justify-between items-center my-2">
                         <span class="bangla">ফন্ট সাইজ</span>
                         <div class="flex items-center gap-1">
-                            <button class="hover:bg-white px-2 rounded text-lg">-</button>
-                            <p class="border rounded p-0.5 px-1.5 bg-white">14</p>
-                            <button class="hover:bg-white px-2 rounded text-lg">+</button>
+                            <button 
+                                @click="decreaseFontSize"
+                                class="hover:bg-white px-2 rounded text-lg"
+                                :disabled="fontSize <= minFontSize"
+                                :class="{ 'opacity-50 cursor-not-allowed': fontSize <= minFontSize }"
+                            >-</button>
+                            <p class="border rounded p-0.5 px-1.5 bg-white">{{ fontSize }}</p>
+                            <button 
+                                @click="increaseFontSize"
+                                class="hover:bg-white px-2 rounded text-lg"
+                                :disabled="fontSize >= maxFontSize"
+                                :class="{ 'opacity-50 cursor-not-allowed': fontSize >= maxFontSize }"
+                            >+</button>
                         </div>
                     </div>
                     
                     <!-- Columns selector -->
                     <div class="my-2">
-                        <p>কলাম</p>
-                        <div class="flex gap-2 justify-center">
-                            <div class="border hover:border-gray-500 rounded py-2 px-3 flex-1 cursor-pointer">
-                                <div class="flex justify-center gap-0.5 items-center">
-                                    <div class="w-4 h-6 bg-gray-300"></div>
-                                </div>
-                            </div>
-                            <div class="border border-black rounded py-2 px-3 flex-1 cursor-pointer">
-                                <div class="flex justify-center gap-0.5 items-center">
-                                    <div class="w-4 h-6 bg-gray-300"></div>
-                                    <div class="w-4 h-6 bg-gray-300"></div>
-                                </div>
-                            </div>
-                            <div class="border hover:border-gray-500 rounded py-2 px-3 flex-1 cursor-pointer">
-                                <div class="flex justify-center gap-0.5 items-center">
-                                    <div class="w-4 h-6 bg-gray-300"></div>
-                                    <div class="w-4 h-6 bg-gray-300"></div>
-                                    <div class="w-4 h-6 bg-gray-300"></div>
-                                </div>
-                            </div>
+                    <p class="bangla mb-1">কলাম</p>
+                    <div class="flex gap-2 justify-center">
+                        <!-- 1 Column -->
+                        <div 
+                        @click="setColumns(1)"
+                        class="border rounded py-2 px-3 flex-1 cursor-pointer transition-colors"
+                        :class="{
+                            'border-black': columnCount === 1,
+                            'hover:border-gray-500': columnCount !== 1
+                        }"
+                        >
+                        <div class="flex justify-center gap-0.5 items-center">
+                            <div class="w-4 h-6 bg-gray-300"></div>
                         </div>
+                        </div>
+                        
+                        <!-- 2 Columns -->
+                        <div 
+                        @click="setColumns(2)"
+                        class="border rounded py-2 px-3 flex-1 cursor-pointer transition-colors"
+                        :class="{
+                            'border-black': columnCount === 2,
+                            'hover:border-gray-500': columnCount !== 2
+                        }"
+                        >
+                        <div class="flex justify-center gap-0.5 items-center">
+                            <div class="w-4 h-6 bg-gray-300"></div>
+                            <div class="w-4 h-6 bg-gray-300"></div>
+                        </div>
+                        </div>
+                        
+                        <!-- 3 Columns -->
+                        <div 
+                        @click="setColumns(3)"
+                        class="border rounded py-2 px-3 flex-1 cursor-pointer transition-colors"
+                        :class="{
+                            'border-black': columnCount === 3,
+                            'hover:border-gray-500': columnCount !== 3
+                        }"
+                        >
+                        <div class="flex justify-center gap-0.5 items-center">
+                            <div class="w-4 h-6 bg-gray-300"></div>
+                            <div class="w-4 h-6 bg-gray-300"></div>
+                            <div class="w-4 h-6 bg-gray-300"></div>
+                        </div>
+                        </div>
+                    </div>
                     </div>
                     
                     <!-- Column divider toggle -->
                     <div class="bg-gray-100 p-2 rounded flex justify-between items-center my-2">
                         <span class="bangla">কলাম ডিভাইডার</span>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer" checked>
+                            <input v-model="showColumnDivider" type="checkbox" class="sr-only peer" checked>
                             <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                         </label>
                     </div>
                     
                     <!-- Chart (simplified) -->
-                    <div class="bg-gray-100 p-2 rounded my-2">
+                    <!-- <div class="bg-gray-100 p-2 rounded my-2">
                         <div class="flex justify-center">
                             <div class="w-32 h-32 rounded-full bg-emerald-500 flex items-center justify-center text-white">
                                 100%
@@ -341,7 +647,7 @@ const getBanglaLetter = (index) => {
                         <div class="text-center mt-2">
                             <p class="text-sm">বোর্ড প্রশ্ন</p>
                         </div>
-                    </div>
+                    </div> -->
                 </div>
             </div>
         </div>
@@ -350,12 +656,110 @@ const getBanglaLetter = (index) => {
 </template>
 
 <style scoped>
-     @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;700&display=swap');
-        .bangla {
+    @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;700&display=swap');
+    @import url('https://fonts.maateen.me/siyam-rupali/font.css');
+    @import url('https://fonts.maateen.me/kalpurush/font.css');
+    @import url('https://fonts.maateen.me/solaiman-lipi/font.css');
+     .bangla {
             font-family: 'Hind Siliguri', sans-serif;
         }
         .bangla-bold {
             font-family: 'Hind Siliguri', sans-serif;
             font-weight: 700;
         }
+
+
+.font-siyam-rupali {
+  font-family: 'Siyam Rupali', Arial, sans-serif;
+}
+
+.font-solaiman-lipi {
+  font-family: 'SolaimanLipi', Arial, sans-serif;
+}
+
+.font-kalpurush {
+  font-family: 'Kalpurush', Arial, sans-serif;
+}
+
+.font-times-new-roman {
+  font-family: 'Times New Roman', serif;
+}
+
+.question-text {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Scoped selectors for questions */
+.question-text :deep(.question-content) {
+  font-family: inherit; /* Inherits from parent */
+}
+
+/* Scoped but allows font to penetrate child components */
+.question-text :deep(*) {
+  font-family: inherit;
+}
+
+.question-content {
+  line-height: 1.5; /* Maintain proper spacing */
+}
+
+/* Ensure all text elements inherit the size */
+.question-content :deep(*) {
+  font-size: inherit;
+}
+
+/* Option circles should maintain their size */
+.question-content :deep(.option-circle) {
+  font-size: 12px; /* Fixed size for circles */
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Disabled button styling */
+button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.break-inside-avoid {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Smooth transitions for column changes */
+.columns-1, .columns-2, .columns-3 {
+  transition: column-count 0.3s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .columns-3 {
+    columns: 2 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .columns-2, .columns-3 {
+    columns: 1 !important;
+  }
+}
+
+@media print {
+  body > *:not(#print-container) {
+    display: none !important;
+  }
+  #print-container {
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .question-content {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+
 </style>

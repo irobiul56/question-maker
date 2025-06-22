@@ -59,7 +59,7 @@ const generateQuestions = () => {
     <Head title="User Dashboard" />
 
     <UserDashboardLayout>
-<div class="w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-8 flex items-center justify-center">
+<div class=" bangla w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-8 flex items-center justify-center">
   <div class="w-full max-w-4xl bg-white rounded-xl shadow-2xl overflow-hidden transition-all duration-300 hover:shadow-3xl">
     <!-- Header with version -->
     <div class="flex justify-between items-center px-6 py-3 bg-gradient-to-r from-indigo-800 to-purple-800">
@@ -176,3 +176,13 @@ const generateQuestions = () => {
 </div>
     </UserDashboardLayout>
 </template>
+<style scoped>
+  @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;700&display=swap');
+        .bangla {
+            font-family: 'Hind Siliguri', sans-serif;
+        }
+        .bangla-bold {
+            font-family: 'Hind Siliguri', sans-serif;
+            font-weight: 700;
+        }
+</style>
