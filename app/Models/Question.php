@@ -30,7 +30,7 @@ class Question extends Model
 
     public function lavel()
     {
-        return $this->belongsTo(Level::class);
+        return $this->belongsTo(Level::class, 'level_id');
     }
 
     public function type()

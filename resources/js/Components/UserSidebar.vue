@@ -27,6 +27,21 @@ const isRouteActive = (patterns) => {
     :class="isCollapsed ? 'w-20' : 'w-64'">
     <nav>
       <ul class="space-y-2">
+      <li>
+          <NavLink
+            class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
+            :class="isCollapsed ? 'justify-center px-2' : 'px-3'">
+            <div class="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0"
+                :class="isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span v-if="!isCollapsed" class="whitespace-nowrap">ড্যাশবোর্ড</span>
+            </div>
+          </NavLink>
+        </li>
+
         <li>
           <NavLink :href="route('qstIndex')" :active="isRouteActive(['qstIndex', 'qstIndex.*'])"
             class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
@@ -37,11 +52,85 @@ const isRouteActive = (patterns) => {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
-              <span v-if="!isCollapsed" class="whitespace-nowrap">Make Question</span>
+              <span v-if="!isCollapsed" class="whitespace-nowrap">প্রশ্ন তৈরি</span>
             </div>
           </NavLink>
         </li>
 
+        <li>
+          <NavLink
+            class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
+            :class="isCollapsed ? 'justify-center px-2' : 'px-3'">
+            <div class="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0"
+                :class="isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span v-if="!isCollapsed" class="whitespace-nowrap">আমার তৈরি প্রশ্ন</span>
+            </div>
+          </NavLink>
+        </li>
+
+        <li>
+          <NavLink
+            class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
+            :class="isCollapsed ? 'justify-center px-2' : 'px-3'">
+            <div class="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0"
+                :class="isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span v-if="!isCollapsed" class="whitespace-nowrap">আমার প্রতিষ্ঠান</span>
+            </div>
+          </NavLink>
+        </li>
+
+        <li>
+          <NavLink
+            class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
+            :class="isCollapsed ? 'justify-center px-2' : 'px-3'">
+            <div class="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0"
+                :class="isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span v-if="!isCollapsed" class="whitespace-nowrap">যোগাযোগ</span>
+            </div>
+          </NavLink>
+        </li>
+
+        <li>
+          <NavLink
+            class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
+            :class="isCollapsed ? 'justify-center px-2' : 'px-3'">
+            <div class="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0"
+                :class="isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span v-if="!isCollapsed" class="whitespace-nowrap">মতামত</span>
+            </div>
+          </NavLink>
+        </li>
+
+        <li>
+          <NavLink
+            class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
+            :class="isCollapsed ? 'justify-center px-2' : 'px-3'">
+            <div class="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0"
+                :class="isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span v-if="!isCollapsed" class="whitespace-nowrap">নির্দেশিকা</span>
+            </div>
+          </NavLink>
+        </li>
         
 
       </ul>

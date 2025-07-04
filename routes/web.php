@@ -24,11 +24,7 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-Route::middleware('auth') -> group(function () {
+Route::middleware(['auth','admin']) -> group(function () {
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -45,20 +41,29 @@ Route::middleware('auth') -> group(function () {
         Route::resource('chapter', ChapterController::class);
         Route::resource('topic', TopicController::class);
         Route::resource('question', QuestionController::class);
-
-
         });
-
-        Route::prefix('user')->group(function(){
-            Route::get('/question-making', [FrontendController::class, 'qstIndex'])-> name('qstIndex');
-            Route::get('/selected-question', [FrontendController::class, 'sltquestion'])-> name('sltquestion');
-            Route::post('/save-questions', [FrontendController::class, 'saveQuestions'])->name('save.questions');
-            
-            //question setting
-            Route::get('/question-setting', [FrontendController::class, 'qstSetting'])-> name('qstSetting');
-        });
-
+        
     });
+
+    // Dashboard
+    Route::get('user/dashboard', function () {
+        return Inertia::render('UserDashboard/Dashboard');
+    })->name('userdashboard')->middleware(['auth','user']);
+
+      // Dashboard
+    Route::get('/dashboard', function () {
+        return Inertia::render('Dashboard');
+    })->name('dashboard')->middleware(['auth','admin']);
+    
+
+    Route::middleware(['auth', 'user'])->prefix('user')->group(function(){
+    
+    // Question routes
+    Route::get('/question-making', [FrontendController::class, 'qstIndex'])->name('qstIndex');
+    Route::get('/selected-question', [FrontendController::class, 'sltquestion'])->name('sltquestion');
+    Route::post('/save-questions', [FrontendController::class, 'saveQuestions'])->name('save.questions');
+    Route::get('/question-setting', [FrontendController::class, 'qstSetting'])->name('qstSetting');
+});
 
 require __DIR__.'/auth.php';
 

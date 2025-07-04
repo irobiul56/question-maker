@@ -36,8 +36,6 @@ class FrontendController extends Controller
 
    public function sltquestion(Request $request)
     {
-     
-    
         $request->validate([
             'chapter_id' => 'required|exists:chapters,id',
             'topic_id' => 'nullable|array',
@@ -59,14 +57,18 @@ class FrontendController extends Controller
         $quetype = Type::all();
         $level = Level::all();
 
-        $questions = Question::with(['options', 'board', 'lavel', 'type', 'academicClass', 'subject', 'chapter', 'topic'])
+        $questions = Question::with(['options', 'cqoptions', 'board', 'lavel', 'type', 'academicClass', 'subject', 'chapter', 'topic'])
             ->where('chapter_id', $request->chapter_id)
             ->when($request->topic_id, function($query, $topicId) {
                 return $query->whereHas('topic', function($q) use ($topicId) {
                     $q->whereIn('topic_id', $topicId);
                 });
             })
-            ->when($request->type, function($query, $type) {
+             ->when($request->type, function($query, $type) {
+            // Modified condition: when type is 'mix', include all types
+                if ($type === 'mix') {
+                    return $query->whereIn('format', ['mcq', 'cq', 'mix']);
+                }
                 return $query->where('format', $type);
             })
             ->when($request->board_ids, function($query, $boardIds) {
@@ -161,9 +163,11 @@ class FrontendController extends Controller
                 'questions' => function($query) {
                     $query->with([
                         'options',
+                        'cqoptions',
                         'academicClass',
                         'subject',
-                        'chapter'
+                        'chapter',
+                        'lavel'
                         ])
                         ->latest();
                 }

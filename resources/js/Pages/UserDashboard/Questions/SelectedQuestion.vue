@@ -112,7 +112,9 @@
 
                                     <span class="mr-1">{{ index + 1 }}.</span>
                                     <div class="flex-1">
-                                        <div class="mb-2" v-html="question.question_text"></div>
+                                        <div class="mb-2">
+                                            <LatexRenderer :content="question.question_text" />
+                                        </div>
                                     </div>
                                 </div>
 
@@ -126,14 +128,32 @@
                                             class="flex items-center justify-center h-5 w-5 border border-gray-400 rounded-full p-0.5">
                                             {{ bengaliChars[question.options.indexOf(option)] }}
                                         </div>
-                                        <div v-html="option.option_text"></div>
+                                        <div>
+                                            <LatexRenderer :content="option.option_text" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- CQ Options -->
+                                <div v-if="question.format === 'cq' && question.cqoptions"
+                                    class="lg:grid grid-cols-1 gap-2">
+                                    <div v-for="(cqoption, optIndex) in question.cqoptions" :key="cqoption.id"
+                                        class="bg-gray-100 my-2 lg:m-0 rounded-lg p-2 flex gap-1 items-center">
+                                        <div class="flex items-center justify-center h-5 w-5 border border-gray-400 rounded-full p-0.5">
+                                            {{ bengaliChars[question.cqoptions.indexOf(cqoption)] }}
+                                        </div>
+                                        <div>
+                                            <LatexRenderer :content="cqoption.cq_text" />
+                                        </div>
                                     </div>
                                 </div>
 
                                 <!-- Explanation -->
                                 <div v-if="question.explanation && question.showExplanation"
                                     class="mt-1.5 bg-green-50 py-2 px-3 text-green-700 rounded transition-all duration-300">
-                                    <div v-html="question.explanation"></div>
+                                    <div>
+                                        <LatexRenderer :content="question.explanation" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -395,6 +415,7 @@
 </style>
 
 <script setup>
+import LatexRenderer from '@/Components/LatexRenderer.vue';
 import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { router, usePage } from '@inertiajs/vue3';

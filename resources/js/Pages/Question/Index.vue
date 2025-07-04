@@ -1,4 +1,5 @@
 <script setup>
+import LatexRenderer from '@/Components/LatexRenderer.vue';
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head } from "@inertiajs/vue3";
 import { Link } from "@inertiajs/vue3";
@@ -835,13 +836,15 @@ const bengaliChars = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', '�
                                         </td>
                                         <td class="px-6 py-4 text-sm text-gray-900">
                                             <!-- Question Text -->
-                                            <div class="font-medium">{{ question.question_text || "No question text" }}
+                                            <div class="font-medium">
+                                                <LatexRenderer :content="question.question_text" />
+                
                                             </div>
 
                                             <!-- Explanation -->
                                             <div v-if="question.explanation" class="text-xs text-gray-500 mt-1">
-                                                <span class="font-semibold">Explanation:</span> {{ question.explanation
-                                                }}
+                                                
+                                                <span class="font-semibold">Explanation:</span> <LatexRenderer :content="question.explanation" />
                                             </div>
 
                                             <!-- MCQ Options -->
@@ -851,7 +854,7 @@ const bengaliChars = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', '�
                                                     <span class="mr-2">{{ bengaliChars[question.options.indexOf(option)] }}.</span>
                                                     <span
                                                         :class="{ 'font-semibold text-green-600': option.is_correct }">
-                                                        {{ option.option_text }}
+                                                        <LatexRenderer :content="option.option_text" />
                                                     </span>
                                                     <span v-if="option.is_correct" class="ml-1 text-green-500">✓</span>
                                                 </div>
@@ -862,7 +865,10 @@ const bengaliChars = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', '�
                                                 <div v-for="option in question.cqoptions" :key="option.id"
                                                     class="text-xs flex items-center">
                                                     <span class="mr-2">{{ bengaliChars[question.cqoptions.indexOf(option)] }}.</span>
-                                                    <span class="font-medium">{{ option.cq_text }}</span>
+                                                    <span class="font-medium">
+                                                        <LatexRenderer :content="option.cq_text" />
+                                                    </span>
+
                                                     <span class="ml-2 text-gray-500">({{ option.mark }} pts)</span>
                                                 </div>
                                             </div>
