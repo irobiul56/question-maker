@@ -4,12 +4,14 @@ import { defineEmits, ref } from 'vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 
+const imageUrl = ref('/storage/img/logos.png');
+
 const emit = defineEmits(['toggle-sidebar']);
 const showMobileMenu = ref(false);
 </script>
 
 <template>
-  <nav class="bg-white text-gray-800 shadow-sm p-4 flex justify-between items-center border-b border-gray-100">
+  <nav class="bg-white text-gray-800 shadow-sm p-2 flex justify-between items-center border-b border-gray-100">
     <div class="flex items-center space-x-2 md:space-x-4">
       <button 
         @click="emit('toggle-sidebar')" 
@@ -21,9 +23,9 @@ const showMobileMenu = ref(false);
         </svg>
       </button>
       <img 
-        src="https://genarticle.com/wp-content/uploads/2023/07/genarticle-logo-1.png" 
+        :src="imageUrl" 
         alt="Question Maker Logo" 
-        class="h-8 w-32 md:h-10 md:w-40 object-contain"
+        class="h-15 w-50 md:h-17 md:w-60 object-contain"
       />
     </div>
     
@@ -59,7 +61,7 @@ const showMobileMenu = ref(false);
                 type="button" 
                 class="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-700 transition duration-150 ease-in-out hover:text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <!-- {{ $page.props.auth.user.name }} -->
+                {{ $page.props.auth.user.name }}
                 <svg class="-me-0.5 ms-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
                 </svg>

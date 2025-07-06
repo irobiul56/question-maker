@@ -3,6 +3,7 @@
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\ClassController;
+use App\Http\Controllers\ContactUsController;
 use App\Http\Controllers\EducationLevelController;
 use App\Http\Controllers\FrontendController;
 use App\Http\Controllers\LevelController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\TopicController;
 use App\Http\Controllers\TypeController;
+use App\Http\Controllers\MyQuestionController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -44,11 +46,7 @@ Route::middleware(['auth','admin']) -> group(function () {
         });
         
     });
-
-    // Dashboard
-    Route::get('user/dashboard', function () {
-        return Inertia::render('UserDashboard/Dashboard');
-    })->name('userdashboard')->middleware(['auth','user']);
+    
 
       // Dashboard
     Route::get('/dashboard', function () {
@@ -57,12 +55,20 @@ Route::middleware(['auth','admin']) -> group(function () {
     
 
     Route::middleware(['auth', 'user'])->prefix('user')->group(function(){
-    
+    //Dashboard
+    Route::get('/dashboard', [FrontendController::class, 'userdashboard'])->name('userdashboard');
+    Route::put('/institute/update', [FrontendController::class, 'updateIn'])->name('institute.update');
+
     // Question routes
     Route::get('/question-making', [FrontendController::class, 'qstIndex'])->name('qstIndex');
     Route::get('/selected-question', [FrontendController::class, 'sltquestion'])->name('sltquestion');
     Route::post('/save-questions', [FrontendController::class, 'saveQuestions'])->name('save.questions');
     Route::get('/question-setting', [FrontendController::class, 'qstSetting'])->name('qstSetting');
+    Route::get('/question-show/{id}', [FrontendController::class, 'qstshow'])->name('qstshow');
+    Route::resource('my-questions', MyQuestionController::class);
+    Route::get('/contact-us', [ContactUsController::class, 'contactus'])->name('contactus');
+    Route::get('/opinion', [ContactUsController::class, 'opinion'])->name('opinion');
+
 });
 
 require __DIR__.'/auth.php';

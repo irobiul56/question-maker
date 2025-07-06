@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
-
+import { ref } from 'vue';
+const imageUrl = ref('/storage/img/logo.png');
 
 </script>
 
@@ -18,11 +19,9 @@ import { Head, Link } from '@inertiajs/vue3';
   <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- Header Section -->
     <div class="text-center mb-16">
-      <div class="inline-flex items-center justify-center px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 mb-4">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-1.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span class="text-sm font-medium">prosnoready.com</span>
+      <div class="gap-2 inline-flex items-center justify-center px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 mb-4">
+        <img  :src="imageUrl" class="h-5 w-5 md:h-5 md:w-5 object-contain" alt="">
+        <span class="text-sm font-medium">learnandteach.app</span>
       </div>
       
       <div>

@@ -6,6 +6,7 @@ use App\Models\AcademicClass;
 use App\Models\board;
 use App\Models\Chapter;
 use App\Models\Education;
+use App\Models\Institute;
 use App\Models\Level;
 use App\Models\Question;
 use App\Models\Savedquestion;
@@ -156,7 +157,7 @@ class FrontendController extends Controller
     public function qstSetting()
     {
         $userId = Auth::id();
-        
+        $institute = Institute::where('user_id', $userId)->first(); 
         $latestExam = Savedquestion::where('user_id', $userId)
             ->with([
                 'user:id,name',
@@ -177,7 +178,77 @@ class FrontendController extends Controller
         // dd($latestExam);
 
         return Inertia::render('UserDashboard/Questions/QuestionSetting', [
-            'savedquestion' => $latestExam ? [$latestExam] : [] // Wrap single item in array
+            'savedquestion' => $latestExam ? [$latestExam] : [],
+            'institute' => $institute
         ]);
     }
+
+
+
+    //Dashboard
+    public function userdashboard()
+    {
+        $userId = Auth::id();
+        $institute = Institute::where('user_id', $userId)->first(); 
+        $savedQuestion = Savedquestion::where('user_id', $userId)->with([
+                'questions' => function($query) {
+                    $query->with([
+                        'academicClass',
+                        'subject',
+                        ])
+                        ->get();
+                }
+            ])->orderBy('id', 'desc')->get();
+
+        return Inertia::render('UserDashboard/Dashboard', [
+            'institute' => $institute,
+            'savedQuestion' => $savedQuestion
+        ]);
+    }
+
+
+public function updateIn(Request $request)
+{
+    $userId = Auth::id();
+    $institute = Institute::where('user_id', $userId)->firstOrFail();
+    
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'address' => 'required|string|max:255',
+        'phone' => 'required|string|max:255',
+        // Add other fields you want to update
+    ]);
+    
+    $institute->update($validated);
+    
+    return redirect()->route('userdashboard')->with('success', 'Institute updated successfully');
+}
+
+    public function qstshow($id){
+        
+        $userId = Auth::id();
+            $institute = Institute::where('user_id', $userId)->first(); 
+            $question = Savedquestion::where('user_id', $userId)
+                ->with([
+                    'user:id,name',
+                    'questions' => function($query) {
+                        $query->with([
+                            'options',
+                            'cqoptions',
+                            'academicClass',
+                            'subject',
+                            'chapter',
+                            'lavel'
+                            ])
+                            ->get();
+                    }
+                ])
+                ->findOrFail($id);
+
+            return Inertia::render('UserDashboard/Questions/QuestionSetting', [
+                'savedquestion' => $question ? [$question] : [],
+                'institute' => $institute,
+            ]);
+    }
+
 }

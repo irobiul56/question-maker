@@ -3,13 +3,14 @@
 import { defineEmits, ref } from 'vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
+const imageUrl = ref('/storage/img/logos.png');
 
 const emit = defineEmits(['toggle-sidebar']);
 const showMobileMenu = ref(false);
 </script>
 
 <template>
-  <nav class="bg-white text-gray-800 shadow-sm p-4 flex justify-between items-center border-b border-gray-100">
+  <nav class="bg-white text-gray-800 shadow-sm p-2 flex justify-between items-center border-b border-gray-100">
     <div class="flex items-center space-x-2 md:space-x-4">
       <button 
         @click="emit('toggle-sidebar')" 
@@ -21,9 +22,9 @@ const showMobileMenu = ref(false);
         </svg>
       </button>
       <img 
-        src="https://genarticle.com/wp-content/uploads/2023/07/genarticle-logo-1.png" 
+        :src="imageUrl" 
         alt="Question Maker Logo" 
-        class="h-8 w-32 md:h-10 md:w-40 object-contain"
+        class="h-15 w-50 md:h-17 md:w-60 object-contain"
       />
     </div>
     

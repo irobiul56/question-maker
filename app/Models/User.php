@@ -28,6 +28,11 @@ class User extends Authenticatable
         return $this->hasMany(SavedQuestion::class);
     }
 
+      public function institute()
+    {
+        return $this->belongsTo(Institute::class);
+    }
+
     /**
      * The attributes that should be hidden for serialization.
      *

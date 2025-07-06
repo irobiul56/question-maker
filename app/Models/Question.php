@@ -33,6 +33,7 @@ class Question extends Model
         return $this->belongsTo(Level::class, 'level_id');
     }
 
+
     public function type()
     {
         return $this->belongsToMany(Type::class);

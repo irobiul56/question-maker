@@ -11,6 +11,10 @@ const props = defineProps({
         type: Array,
         required: true,
         default: () => []
+    },
+
+    institute:{
+        type: Object,
     }
 });
 
@@ -285,8 +289,8 @@ onMounted(() => {
                 <div id="questions-container" :class="[fontClasses[selectedFont], 'question-text']" class="break-inside-avoid first-letter:w-full p-[5mm] md:p-[10mm] print:p-0 print:w-full print:shadow-none scroll-m-0 bg-white">
                     <!-- Header section -->
                     <div class="py-2 print:py-0">
-                        <h1 class="text-xl font-bold text-center" contenteditable="true">Jamalpur Kaliakair M E H Arif Institute</h1>
-                        <h3 v-if="address" class="text-xl font-bold text-center" contenteditable="true">Jamalpur, Kaliakair, Gazipur</h3>
+                        <h1 class="text-xl font-bold text-center" contenteditable="true">{{ institute.name }}</h1>
+                        <h3 v-if="address" class="text-xl font-bold text-center" contenteditable="true">{{ institute.address }}</h3>
                         <div class="relative" contenteditable="true">
                             <p class="text-center text-lg">{{ localQuestions[0]?.exam_name }}</p>
                             <p class="text-center text-lg">{{ localQuestions[0]?.questions[0]?.academic_class?.name }}</p>
