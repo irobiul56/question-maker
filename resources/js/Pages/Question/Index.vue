@@ -1,55 +1,34 @@
 <script setup>
-import LatexRenderer from '@/Components/LatexRenderer.vue';
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import { Head } from "@inertiajs/vue3";
-import { Link } from "@inertiajs/vue3";
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { usePage, useForm } from '@inertiajs/vue3';
 import { ElMessage, ElLoading } from "element-plus";
 import { Plus, Edit, Delete, Check } from '@element-plus/icons-vue';
-import { router } from '@inertiajs/vue3';
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
+import { Head, Link, router } from "@inertiajs/vue3";
+import LatexRenderer from '@/Components/LatexRenderer.vue';
 
 const { props } = usePage();
-const questions = ref(props.questions);
-const topics = ref(props.topics);
-const chapters = ref(props.chapters);
-const education = ref(props.education);
-const classes = ref(props.classes);
-const subjects = ref(props.subjects);
-const levels = ref(props.levels);
-const types = ref(props.types);
-const boards = ref(props.boards);
-
 const isLoading = ref(false);
+const isResolvingHierarchy = ref(false);
+const isTableLoading = ref(true); // Add table loading state
 
-// Watch for new questions data from server
-watch(() => props.questions, (newQuestions) => {
-    // Merge with existing questions while preserving client-side state
-    if (newQuestions && newQuestions.length) {
-        const newQuestionsMap = new Map(newQuestions.map(q => [q.id, q]));
+// Reactive data
+const questions = ref(props.questions ?? []);
+const topics = ref(props.topics ?? []);
+const chapters = ref(props.chapters ?? []);
+const education = ref(props.education ?? []);
+const classes = ref(props.classes ?? []);
+const subjects = ref(props.subjects ?? []);
+const levels = ref(props.levels ?? []);
+const types = ref(props.types ?? []);
+const boards = ref(props.boards ?? []);
 
-        questions.value = questions.value.map(q => {
-            return newQuestionsMap.get(q.id) || q;
-        });
+// Use:
+const topicId = questions.topic?.id;
 
-        // Add any new questions that aren't in our local state
-        newQuestions.forEach(q => {
-            if (!questions.value.some(existing => existing.id === q.id)) {
-                questions.value.push(q);
-            }
-        });
-    }
-}, { deep: true });
-
-
-watch(() => props.topics, (newTopics) => {
-    topics.value = newTopics;
-}, { deep: true });
-
-// Get errors from page props
-const errors = computed(() => props.errors);
-
-// Pagination and filtering
+// UI state
+const isQuestionModalVisible = ref(false);
+const isTopicModalVisible = ref(false);
 const itemsPerPage = ref(10);
 const currentPage = ref(1);
 const searchQuery = ref('');
@@ -58,15 +37,6 @@ const selectedClass = ref('');
 const selectedSubject = ref('');
 const selectedChapter = ref('');
 const selectedTopic = ref('');
-
-// Expanded state for tree structure
-const expandedClasses = ref({});
-const expandedSubjects = ref({});
-const expandedChapters = ref({});
-
-// Modal visibility
-const isQuestionModalVisible = ref(false);
-const isTopicModalVisible = ref(false);
 
 // Forms
 const questionForm = useForm({
@@ -88,13 +58,11 @@ const questionForm = useForm({
         { option_text: '', is_correct: false },
         { option_text: '', is_correct: false }
     ],
-
     cq: [
         { cq_text: '', mark: '' },
         { cq_text: '', mark: '' },
         { cq_text: '', mark: '' },
         { cq_text: '', mark: '' },
-
     ],
 });
 
@@ -104,7 +72,7 @@ const topicForm = useForm({
     chapter_id: selectedChapter.value || ''
 });
 
-// Computed properties for dependent dropdowns
+// Computed properties
 const filteredClasses = computed(() => {
     if (!selectedEducation.value) return [];
     return classes.value.filter(cls => cls.education_id == selectedEducation.value);
@@ -112,26 +80,19 @@ const filteredClasses = computed(() => {
 
 const filteredSubjects = computed(() => {
     if (!selectedClass.value) return [];
-    return subjects.value.filter(subject =>
-        subject.academic_classes_id == selectedClass.value
-    );
+    return subjects.value.filter(subject => subject.academic_classes_id == selectedClass.value);
 });
 
 const filteredChapters = computed(() => {
     if (!selectedSubject.value) return [];
-    return chapters.value.filter(chapter =>
-        chapter.subject_id == selectedSubject.value
-    );
+    return chapters.value.filter(chapter => chapter.subject_id == selectedSubject.value);
 });
 
 const filteredTopics = computed(() => {
     if (!selectedChapter.value) return [];
-    return topics.value.filter(topic =>
-        topic.chapter_id == selectedChapter.value
-    );
+    return topics.value.filter(topic => topic.chapter_id == selectedChapter.value);
 });
 
-// Filter questions based on selections
 const filteredQuestions = computed(() => {
     return questions.value.filter(question => {
         const matchesTopic = !selectedTopic.value || question.topic_id == selectedTopic.value;
@@ -141,7 +102,6 @@ const filteredQuestions = computed(() => {
     });
 });
 
-// Pagination for questions
 const paginatedQuestions = computed(() => {
     const start = (currentPage.value - 1) * itemsPerPage.value;
     const end = start + itemsPerPage.value;
@@ -152,342 +112,153 @@ const totalQuestionPages = computed(() => {
     return Math.ceil(filteredQuestions.value.length / itemsPerPage.value);
 });
 
-// Group data hierarchically
-const groupedData = computed(() => {
-    const groups = {};
-
-    filteredClasses.value.forEach(cls => {
-        if (!groups[cls.id]) {
-            groups[cls.id] = {
-                class: cls,
-                subjects: {}
-            }
-        }
-
-        filteredSubjects.value.forEach(subject => {
-            if (subject.academic_classes_id === cls.id) {
-                if (!groups[cls.id].subjects[subject.id]) {
-                    groups[cls.id].subjects[subject.id] = {
-                        subject: subject,
-                        chapters: {}
-                    }
-                }
-
-                filteredChapters.value.forEach(chapter => {
-                    if (chapter.subject_id === subject.id) {
-                        if (!groups[cls.id].subjects[subject.id].chapters[chapter.id]) {
-                            groups[cls.id].subjects[subject.id].chapters[chapter.id] = {
-                                chapter: chapter,
-                                topics: []
-                            }
-                        }
-
-                        filteredTopics.value.forEach(topic => {
-                            if (topic.chapter_id === chapter.id) {
-                                groups[cls.id].subjects[subject.id].chapters[chapter.id].topics.push(topic);
-                            }
-                        });
-                    }
-                });
-            }
-        });
-    });
-
-    return groups;
-});
-
-// Flatten the grouped structure for display
-const flattenedData = computed(() => {
-    const result = [];
-
-    Object.values(groupedData.value).forEach(classGroup => {
-        const classId = classGroup.class.id;
-        const isClassExpanded = expandedClasses.value[classId] !== false;
-
-        // Add class row
-        result.push({
-            type: 'class',
-            id: classId,
-            name: classGroup.class.name,
-            education_id: classGroup.class.education_id,
-            isExpanded: isClassExpanded,
-            indentLevel: 0
-        });
-
-        if (isClassExpanded) {
-            Object.values(classGroup.subjects).forEach(subjectGroup => {
-                const subjectId = subjectGroup.subject.id;
-                const isSubjectExpanded = expandedSubjects.value[subjectId] !== false;
-
-                // Add subject row
-                result.push({
-                    type: 'subject',
-                    id: subjectId,
-                    name: subjectGroup.subject.name,
-                    class_id: classId,
-                    isExpanded: isSubjectExpanded,
-                    indentLevel: 1
-                });
-
-                if (isSubjectExpanded) {
-                    Object.values(subjectGroup.chapters).forEach(chapterGroup => {
-                        const chapterId = chapterGroup.chapter.id;
-                        const isChapterExpanded = expandedChapters.value[chapterId] !== false;
-
-                        // Add chapter row
-                        result.push({
-                            type: 'chapter',
-                            id: chapterId,
-                            name: chapterGroup.chapter.name,
-                            subject_id: subjectId,
-                            isExpanded: isChapterExpanded,
-                            indentLevel: 2
-                        });
-
-                        if (isChapterExpanded) {
-                            // Add topics
-                            chapterGroup.topics.forEach(topic => {
-                                result.push({
-                                    type: 'topic',
-                                    ...topic,
-                                    indentLevel: 3
-                                });
-                            });
-                        }
-                    });
-                }
-            });
-        }
-    });
-
-    return result;
-});
-
-// Navigation
-const nextPage = () => {
-    if (currentPage.value < totalQuestionPages.value) {
-        currentPage.value++;
+// Watchers
+watch(() => props, (newProps) => {
+    questions.value = newProps.questions ?? [];
+    topics.value = newProps.topics ?? [];
+    chapters.value = newProps.chapters ?? [];
+    education.value = newProps.education ?? [];
+    classes.value = newProps.classes ?? [];
+    subjects.value = newProps.subjects ?? [];
+    levels.value = newProps.levels ?? [];
+    types.value = newProps.types ?? [];
+    boards.value = newProps.boards ?? [];
+    
+    // Hide table loading when data is loaded
+    if (newProps.questions) {
+        isTableLoading.value = false;
     }
-};
+}, { deep: true });
 
-const prevPage = () => {
-    if (currentPage.value > 1) {
-        currentPage.value--;
-    }
-};
-
-// Watch for changes in filters and reset dependent filters
-watch(selectedEducation, () => {
-    selectedClass.value = '';
-    selectedSubject.value = '';
-    selectedChapter.value = '';
-    selectedTopic.value = '';
-    currentPage.value = 1;
-    expandedClasses.value = {};
-    expandedSubjects.value = {};
-    expandedChapters.value = {};
-});
-
-watch(selectedClass, () => {
-    selectedSubject.value = '';
-    selectedChapter.value = '';
-    selectedTopic.value = '';
-    currentPage.value = 1;
-    expandedSubjects.value = {};
-    expandedChapters.value = {};
-});
-
-watch(selectedSubject, () => {
-    selectedChapter.value = '';
-    selectedTopic.value = '';
-    currentPage.value = 1;
-    expandedChapters.value = {};
-});
-
-watch(selectedChapter, () => {
-    selectedTopic.value = '';
-    currentPage.value = 1;
-});
-
-// Add this watcher in your script section
-watch(() => questionForm.topic_id, (newTopicId) => {
-    if (newTopicId) {
-        const selectedTopic = topics.value.find(t => t.id === newTopicId);
-        if (selectedTopic) {
-            // Find the chapter for this topic
-            const chapter = chapters.value.find(c => c.id === selectedTopic.chapter_id);
-            if (chapter) {
-                questionForm.chapter_id = chapter.id;
-                
-                // Find the subject for this chapter
-                const subject = subjects.value.find(s => s.id === chapter.subject_id);
-                if (subject) {
-                    questionForm.subject_id = subject.id;
-                    
-                    // Find the class for this subject
-                    const cls = classes.value.find(c => c.id === subject.academic_classes_id);
-                    if (cls) {
-                        questionForm.academic_classes_id = cls.id;
-                    }
-                }
-            }
-        }
+// On mounted - set a timeout to handle loading state
+onMounted(() => {
+    // If data is already loaded, hide loading
+    if (props.questions && props.questions.length > 0) {
+        isTableLoading.value = false;
     } else {
-        // Clear the fields if no topic is selected
+        // Set a timeout to handle potential delays
+        setTimeout(() => {
+            if (questions.value.length === 0) {
+                isTableLoading.value = false;
+            }
+        }, 5000); // 5 second timeout
+    }
+});
+
+watch(() => questionForm.topic_id, async (newTopicId) => {
+    if (!newTopicId) {
         questionForm.academic_classes_id = '';
         questionForm.subject_id = '';
         questionForm.chapter_id = '';
+        return;
+    }
+
+    isResolvingHierarchy.value = true;
+    
+    try {
+        const selectedTopic = topics.value.find(t => t.id == newTopicId);
+        if (!selectedTopic) {
+            console.error('Topic not found:', newTopicId);
+            return;
+        }
+
+        const chapter = chapters.value.find(c => c.id == selectedTopic.chapter_id);
+        if (!chapter) {
+            console.error('Chapter not found for topic:', selectedTopic.chapter_id);
+            return;
+        }
+
+        const subject = subjects.value.find(s => s.id == chapter.subject_id);
+        if (!subject) {
+            console.error('Subject not found for chapter:', chapter.subject_id);
+            return;
+        }
+
+        const cls = classes.value.find(c => c.id == subject.academic_classes_id);
+        if (!cls) {
+            console.error('Class not found for subject:', subject.academic_classes_id);
+            return;
+        }
+
+        // Update form fields
+        questionForm.chapter_id = chapter.id;
+        questionForm.subject_id = subject.id;
+        questionForm.academic_classes_id = cls.id;
+        
+        // Update filters to match
+        selectedEducation.value = cls.education_id;
+        selectedClass.value = cls.id;
+        selectedSubject.value = subject.id;
+        selectedChapter.value = chapter.id;
+        
+    } catch (error) {
+        console.error('Error resolving hierarchy:', error);
+        ElMessage.error('Failed to resolve topic hierarchy');
+    } finally {
+        isResolvingHierarchy.value = false;
     }
 }, { immediate: true });
 
-// Toggle expand/collapse
-const toggleExpand = (item) => {
-    if (item.type === 'class') {
-        expandedClasses.value = {
-            ...expandedClasses.value,
-            [item.id]: !expandedClasses.value[item.id]
-        };
-    } else if (item.type === 'subject') {
-        expandedSubjects.value = {
-            ...expandedSubjects.value,
-            [item.id]: !expandedSubjects.value[item.id]
-        };
-    } else if (item.type === 'chapter') {
-        expandedChapters.value = {
-            ...expandedChapters.value,
-            [item.id]: !expandedChapters.value[item.id]
-        };
-    }
-};
-
-// Expand/collapse all
-const toggleExpandAll = (expand) => {
-    if (expand) {
-        // Expand all classes, subjects, and chapters
-        Object.keys(groupedData.value).forEach(classId => {
-            expandedClasses.value[classId] = true;
-            Object.keys(groupedData.value[classId].subjects).forEach(subjectId => {
-                expandedSubjects.value[subjectId] = true;
-                Object.keys(groupedData.value[classId].subjects[subjectId].chapters).forEach(chapterId => {
-                    expandedChapters.value[chapterId] = true;
-                });
-            });
-        });
-    } else {
-        // Collapse all
-        expandedClasses.value = {};
-        expandedSubjects.value = {};
-        expandedChapters.value = {};
-    }
-};
-
-// Question CRUD operations
-const openQuestionModal = (topicId = null) => {
-    questionForm.reset();
-    questionForm.topic_id = topicId || selectedTopic.value || '';
-    isQuestionModalVisible.value = true;
-};
-
-const editQuestion = (question) => {
-    questionForm.reset();
-
-    questionForm.id = question.id;
-    questionForm.topic_id = question.topic_id;
-
-    questionForm.type_id = question.type ?
-        (Array.isArray(question.type) ?
-            question.type.map(t => t.id) :
-            [question.type.id]) :
-        [];
-
-    questionForm.level_id = question.level_id;
-    questionForm.board_id = question.board_id;
-    questionForm.format = question.format;
-    questionForm.question_text = question.question_text;
-    questionForm.explanation = question.explanation;
-
-    // Load options if they exist
-    if (question.options && question.options.length > 0) {
-        questionForm.options = question.options.map(opt => ({
-            option_text: opt.option_text,
-            is_correct: Boolean(opt.is_correct)
-        }));
-    } else {
-        questionForm.options = [
-            { option_text: '', is_correct: false },
-            { option_text: '', is_correct: false },
-            { option_text: '', is_correct: false },
-            { option_text: '', is_correct: false }
-        ];
-    }
-
-    if (question.cqoptions && question.cqoptions.length > 0) {
-        questionForm.cq = question.cqoptions.map(opt => ({
-            cq_text: opt.cq_text,
-            mark: opt.mark
-        }));
-    } else {
-        questionForm.cq = [
-            { cq_text: '', mark: '' },
-            { cq_text: '', mark: '' },
-            { cq_text: '', mark: '' },
-            { cq_text: '', mark: '' },
-        ];
-    }
-
-    isQuestionModalVisible.value = true;
-};
-
-const addOption = () => {
-    questionForm.options.push({ option_text: '', is_correct: false });
-};
-
-const addcq = () => {
-    questionForm.cq.push({ cq_text: '', mark: '' });
-};
-
-const removeOption = (inx) => {
-    if (questionForm.options.length > 4) {
-        questionForm.options.splice(inx, 1);
-    }
-};
-
-const removecq = (index) => {
-    if (questionForm.cq.length > 4) {
-        questionForm.cq.splice(index, 1);
-    }
-};
-
-const submitQuestion = () => {
+// Methods
+const submitQuestion = async () => {
     isLoading.value = true;
+    
+    try {
+        // Final verification before submission
+        if (questionForm.topic_id) {
+            const selectedTopic = topics.value.find(t => t.id == questionForm.topic_id);
+            if (selectedTopic) {
+                if (!questionForm.chapter_id) questionForm.chapter_id = selectedTopic.chapter_id;
+                
+                const chapter = chapters.value.find(c => c.id == questionForm.chapter_id);
+                if (chapter && !questionForm.subject_id) questionForm.subject_id = chapter.subject_id;
+                
+                const subject = subjects.value.find(s => s.id == questionForm.subject_id);
+                if (subject && !questionForm.academic_classes_id) questionForm.academic_classes_id = subject.academic_classes_id;
+            }
+        }
 
-    const isUpdate = Boolean(questionForm.id);
+        const isUpdate = Boolean(questionForm.id);
+        const method = isUpdate ? 'put' : 'post';
+        const url = isUpdate ? route('question.update', questionForm.id) : route('question.store');
 
-    questionForm[isUpdate ? 'put' : 'post'](
-        isUpdate ? route('question.update', questionForm.id) : route('question.store'),
-        {
+        await questionForm[method](url, {
             preserveScroll: true,
             onSuccess: (page) => {
-                // Update local state immediately
-                if (isUpdate) {
-                    // Find and update the existing question
-                    const index = questions.value.findIndex(q => q.id === questionForm.id);
-                    if (index !== -1) {
-                        questions.value[index] = page.props.updatedQuestion || page.props.questions.find(q => q.id === questionForm.id);
-                    }
-                } else {
-                    // Add new question to the beginning of the list
-                    questions.value.unshift(page.props.updatedQuestion || page.props.questions[0]);
+                const updatedQuestion = page.props.flash?.updatedQuestion || 
+                                     page.props.question || 
+                                     (page.props.questions?.length ? page.props.questions[0] : null);
+
+                if (!updatedQuestion) {
+                    throw new Error("Invalid response from server");
                 }
 
-                isQuestionModalVisible.value = true;
+                if (isUpdate) {
+                    const index = questions.value.findIndex(q => q.id === updatedQuestion.id);
+                    if (index !== -1) {
+                        questions.value.splice(index, 1, updatedQuestion);
+                    } else {
+                        questions.value.unshift(updatedQuestion);
+                    }
+                } else {
+                    questions.value.unshift(updatedQuestion);
+                }
+
+                questionForm.reset();
+                isQuestionModalVisible.value = false;
                 ElMessage.success(`Question ${isUpdate ? 'updated' : 'created'} successfully!`);
             },
             onError: (errors) => {
-                ElMessage.error("Operation failed. Please check the form for errors.");
+                const errorMsg = errors?.message || Object.values(errors).join('\n');
+                ElMessage.error(`Operation failed: ${errorMsg}`);
             }
-        }
-    ).finally(() => isLoading.value = false);
+        });
+    } catch (error) {
+        console.error('Submission error:', error);
+        ElMessage.error(error.message || 'Failed to submit question');
+    } finally {
+        isLoading.value = false;
+    }
 };
 
 const deleteQuestion = (questionId) => {
@@ -498,22 +269,17 @@ const deleteQuestion = (questionId) => {
             background: 'rgba(0, 0, 0, 0.7)'
         });
 
-        // Store the index before deletion for rollback
         const questionIndex = questions.value.findIndex(q => q.id === questionId);
-
-        // Optimistically remove from UI
         questions.value = questions.value.filter(q => q.id !== questionId);
 
         questionForm.delete(route('question.destroy', questionId), {
             onSuccess: () => {
                 loading.close();
                 ElMessage.success("Question deleted successfully!");
-                // No need to update questions.value again since we already removed it
             },
             onError: () => {
                 loading.close();
                 ElMessage.error("Failed to delete the question. Please try again.");
-                // Rollback the UI change if deletion failed
                 if (questionIndex !== -1) {
                     const deletedQuestion = props.questions.find(q => q.id === questionId);
                     if (deletedQuestion) {
@@ -525,113 +291,11 @@ const deleteQuestion = (questionId) => {
     }
 };
 
-// Topic CRUD operations
-const openTopicModal = () => {
-    topicForm.reset();
-    topicForm.chapter_id = selectedChapter.value || '';
-    isTopicModalVisible.value = true;
-};
-
-const editTopic = (topic) => {
-    topicForm.id = topic.id;
-    topicForm.name = topic.name;
-    topicForm.chapter_id = topic.chapter_id;
-    isTopicModalVisible.value = true;
-};
-
-const submitTopic = () => {
-    const isUpdate = Boolean(topicForm.id);
-    const routeName = isUpdate ? 'topic.update' : 'topic.store';
-    const routeParams = isUpdate ? [topicForm.id] : [];
-
-    const loading = ElLoading.service({
-        lock: true,
-        text: isUpdate ? 'Updating topic...' : 'Creating topic...',
-        background: 'rgba(0, 0, 0, 0.7)'
-    });
-
-    topicForm[isUpdate ? 'put' : 'post'](route(routeName, ...routeParams), {
-        onSuccess: () => {
-            loading.close();
-            isTopicModalVisible.value = false;
-            ElMessage.success(`Topic ${isUpdate ? 'updated' : 'created'} successfully!`);
-
-            // Refresh topics data instantly
-            if (isUpdate) {
-                // Update existing topic
-                const index = topics.value.findIndex(t => t.id === topicForm.id);
-                if (index !== -1) {
-                    topics.value[index] = {
-                        ...topics.value[index],
-                        ...topicForm.data()
-                    };
-                }
-            } else {
-                // Add new topic at the beginning of the list
-                topics.value.unshift({
-                    ...topicForm.data(),
-                    id: Math.max(...topics.value.map(t => t.id)) + 1 // Temporary ID until real response comes
-                });
-
-                // When the real response comes from the server, replace the temporary topic
-                // This assumes your backend returns the created topic in the response
-            }
-        },
-        onError: () => {
-            loading.close();
-            ElMessage.error("Failed to submit the topic. Please try again.");
-        }
-    });
-};
-
-const deleteTopic = (topicId) => {
-    if (confirm("Are you sure you want to delete this topic?")) {
-        const loading = ElLoading.service({
-            lock: true,
-            text: 'Deleting topic...',
-            background: 'rgba(0, 0, 0, 0.7)'
-        });
-
-        // Store the index before deletion for rollback
-        const topicIndex = topics.value.findIndex(t => t.id === topicId);
-
-        // Optimistically remove from UI
-        topics.value = topics.value.filter(t => t.id !== topicId);
-
-        // Also remove any questions associated with this topic
-        const questionsToRemove = questions.value.filter(q => q.topic_id === topicId);
-        questions.value = questions.value.filter(q => q.topic_id !== topicId);
-
-        topicForm.delete(route('topic.destroy', topicId), {
-            onSuccess: () => {
-                loading.close();
-                ElMessage.success("Topic deleted successfully!");
-                // No need to update topics.value again since we already removed it
-            },
-            onError: () => {
-                loading.close();
-                ElMessage.error("Failed to delete the topic. Please try again.");
-                // Rollback the UI changes if deletion failed
-                if (topicIndex !== -1) {
-                    const deletedTopic = props.topics.find(t => t.id === topicId);
-                    if (deletedTopic) {
-                        topics.value.splice(topicIndex, 0, deletedTopic);
-                        // Also restore any questions that were removed
-                        questions.value = [...questions.value, ...questionsToRemove];
-                    }
-                }
-            }
-        });
-    }
-};
-
 const bengaliChars = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', 'ঝ', 'ঞ', 'ট', 'ঠ', 'ড', 'ঢ', 'ণ', 'ত', 'থ', 'দ', 'ধ', 'ন', 'প', 'ফ', 'ব', 'ভ', 'ম', 'য', 'র', 'ল', 'শ', 'ষ', 'স', 'হ', 'ড়', 'ঢ়', 'য়'];
-
 </script>
 
 <template>
     <AuthenticatedLayout>
-
         <Head title="Questions Management" />
 
         <!-- Flash Message -->
@@ -687,204 +351,162 @@ const bengaliChars = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', '�
 
                     <!-- Action Buttons -->
                     <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto mt-4 lg:mt-0">
-                        <el-button @click="openQuestionModal()" type="primary" size="large" class="w-full lg:w-auto">
-                            <el-icon class="mr-2">
-                                <Plus />
-                            </el-icon>
-                            Add Question
-                        </el-button>
-                        <el-button @click="openTopicModal()" type="success" size="large" class="w-full lg:w-auto">
-                            <el-icon class="mr-2">
-                                <Plus />
-                            </el-icon>
-                            Add Topic
-                        </el-button>
+                        <Link :href="route('question.create')">
+                            <el-button type="primary" size="large" class="w-full lg:w-auto">
+                                <el-icon class="mr-2">
+                                    <Plus />
+                                </el-icon>
+                                Add Question
+                            </el-button>
+                        </Link>
                     </div>
                 </div>
             </div>
 
-            <!-- Main Content Area -->
-            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                <!-- Left column - Tree Structure -->
-                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm overflow-hidden">
-                    <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                        <h3 class="text-lg font-medium text-gray-900">Curriculum Structure</h3>
+            <!-- Questions Table -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">Questions</h3>
+                        <p class="text-sm text-gray-500 mt-1">
+                            Showing {{ filteredQuestions.length }} questions for selected filters
+                        </p>
+                    </div>
+                    
+                    <!-- Search Bar -->
+                    <div class="w-full sm:w-64">
+                        <el-input
+                            v-model="searchQuery"
+                            placeholder="Search questions..."
+                            clearable
+                            size="large"
+                        >
+                            <template #prefix>
+                                <el-icon class="el-input__icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                </el-icon>
+                            </template>
+                        </el-input>
+                    </div>
+
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-500">
+                            Page {{ currentPage }} of {{ totalQuestionPages }}
+                        </span>
                         <div class="flex space-x-2">
-                            <el-button @click="toggleExpandAll(true)" size="small" plain>
-                                Expand All
+                            <el-button @click="currentPage--" :disabled="currentPage <= 1" size="small">
+                                Previous
                             </el-button>
-                            <el-button @click="toggleExpandAll(false)" size="small" plain>
-                                Collapse All
+                            <el-button @click="currentPage++" :disabled="currentPage >= totalQuestionPages" size="small">
+                                Next
                             </el-button>
                         </div>
-                    </div>
-                    <div class="overflow-y-auto" style="max-height: calc(100vh - 300px)">
-                        <ul class="divide-y divide-gray-200">
-                            <li v-for="item in flattenedData" :key="item.id"
-                                class="px-4 py-3 hover:bg-gray-50 transition-colors duration-150" :class="{
-                                    'bg-blue-50': item.type === 'class',
-                                    'bg-green-50': item.type === 'subject',
-                                    'bg-purple-50': item.type === 'chapter',
-                                    'bg-white': item.type === 'topic'
-                                }">
-                                <div class="flex items-center"
-                                    :style="{ 'padding-left': `${item.indentLevel * 1.5}rem` }">
-                                    <button v-if="['class', 'subject', 'chapter'].includes(item.type)"
-                                        @click="toggleExpand(item)" class="mr-2 text-gray-500 hover:text-gray-700">
-                                        <svg class="w-4 h-4 transition-transform duration-200"
-                                            :class="{ 'transform rotate-90': item.isExpanded }" fill="none"
-                                            stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M9 5l7 7-7 7"></path>
-                                        </svg>
-                                    </button>
-                                    <span class="font-medium">
-                                        {{ item.name }}
-                                        <span v-if="item.type === 'topic'" class="ml-2 text-xs text-gray-500">
-                                            ({{questions.filter(q => q.topic_id === item.id).length}} questions)
-                                        </span>
-                                    </span>
-                                    <div v-if="item.type === 'topic'" class="ml-auto flex space-x-2">
-                                        <button @click.stop="openQuestionModal(item.id)"
-                                            class="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-100">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                            </svg>
-                                        </button>
-                                        <button @click.stop="editTopic(item)"
-                                            class="text-yellow-600 hover:text-yellow-800 p-1 rounded-full hover:bg-yellow-100">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                                                </path>
-                                            </svg>
-                                        </button>
-                                        <button @click.stop="deleteTopic(item.id)"
-                                            class="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                                </path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                            </li>
-                        </ul>
                     </div>
                 </div>
 
-                <!-- Right column - Questions List -->
-                <div class="lg:col-span-3 bg-white rounded-xl shadow-sm overflow-hidden">
-                    <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-900">Questions</h3>
-                            <p class="text-sm text-gray-500 mt-1">
-                                Showing {{ filteredQuestions.length }} questions for selected filters
-                            </p>
-                        </div>
-                        <div class="flex items-center space-x-4">
-                            <span class="text-sm text-gray-500">
-                                Page {{ currentPage }} of {{ totalQuestionPages }}
-                            </span>
-                            <div class="flex space-x-2">
-                                <el-button @click="prevPage" :disabled="currentPage <= 1" size="small">
-                                    Previous
-                                </el-button>
-                                <el-button @click="nextPage" :disabled="currentPage >= totalQuestionPages" size="small">
-                                    Next
-                                </el-button>
-                            </div>
+                <!-- Table Loading State -->
+                <div v-if="isTableLoading" class="p-8">
+                    <div class="flex flex-col items-center justify-center space-y-4">
+                        <!-- Loading Spinner -->
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        <div class="text-center">
+                            <p class="text-gray-600 font-medium">Loading questions...</p>
+                            <p class="text-sm text-gray-500 mt-1">Please wait while we fetch your data</p>
                         </div>
                     </div>
-                    <div class="overflow-y-auto" style="max-height: calc(100vh - 300px)">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                </div>
+
+                <!-- Table Content -->
+                <div v-else class="overflow-y-auto" style="max-height: calc(100vh - 300px)">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    #
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Question
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Type
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template v-if="paginatedQuestions.length === 0">
                                 <tr>
-                                    <th scope="col"
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        #
-                                    </th>
-                                    <th scope="col"
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Question
-                                    </th>
-                                    <th scope="col"
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Type
-                                    </th>
-                                    <th scope="col"
-                                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Actions
-                                    </th>
+                                    <td colspan="4" class="px-6 py-8 text-center">
+                                        <div class="flex flex-col items-center justify-center text-gray-500">
+                                            <svg class="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            <p class="text-lg font-medium mb-1">No questions found</p>
+                                            <p class="text-sm">Try adjusting your filters or search terms</p>
+                                        </div>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <template v-if="paginatedQuestions.length === 0">
-                                    <tr>
-                                        <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
-                                            No questions found matching your criteria.
-                                        </td>
-                                    </tr>
-                                </template>
-                                <template v-else>
-                                    <tr v-for="(question, index) in paginatedQuestions" :key="question.id"
-                                        class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {{ (currentPage - 1) * itemsPerPage + index + 1 }}
-                                        </td>
-                                        <td class="px-6 py-4 text-sm text-gray-900">
-                                            <!-- Question Text -->
-                                            <div class="font-medium">
-                                                <LatexRenderer :content="question.question_text" />
-                
-                                            </div>
+                            </template>
+                            <template v-else>
+                                <tr v-for="(question, index) in paginatedQuestions" :key="question.id"
+                                    class="hover:bg-gray-50 transition-colors duration-150">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        {{ (currentPage - 1) * itemsPerPage + index + 1 }}
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">
+                                        <!-- Question Text -->
+                                        <div class="font-medium">
+                                            <LatexRenderer :content="question.question_text" />
+                                        </div>
 
-                                            <!-- Explanation -->
-                                            <div v-if="question.explanation" class="text-xs text-gray-500 mt-1">
-                                                
-                                                <span class="font-semibold">Explanation:</span> <LatexRenderer :content="question.explanation" />
-                                            </div>
+                                        <!-- Explanation -->
+                                        <div v-if="question.explanation" class="text-xs text-gray-500 mt-1">
+                                            <span class="font-semibold">Explanation:</span> <LatexRenderer :content="question.explanation" />
+                                        </div>
 
-                                            <!-- MCQ Options -->
-                                            <div v-if="question.options?.length" class="mt-2 space-y-1">
-                                                <div v-for="option in question.options" :key="option.id"
-                                                    class="text-xs flex items-center">
-                                                    <span class="mr-2">{{ bengaliChars[question.options.indexOf(option)] }}.</span>
-                                                    <span
-                                                        :class="{ 'font-semibold text-green-600': option.is_correct }">
-                                                        <LatexRenderer :content="option.option_text" />
-                                                    </span>
-                                                    <span v-if="option.is_correct" class="ml-1 text-green-500">✓</span>
-                                                </div>
+                                        <!-- MCQ Options -->
+                                        <div v-if="question.options?.length" class="mt-2 space-y-1">
+                                            <div v-for="option in question.options" :key="option.id"
+                                                class="text-xs flex items-center">
+                                                <span class="mr-2">{{ bengaliChars[question.options.indexOf(option)] }}.</span>
+                                                <span
+                                                    :class="{ 'font-semibold text-green-600': option.is_correct }">
+                                                    <LatexRenderer :content="option.option_text" />
+                                                </span>
+                                                <span v-if="option.is_correct" class="ml-1 text-green-500">✓</span>
                                             </div>
+                                        </div>
 
-                                            <!-- CQ Options -->
-                                            <div v-if="question.cqoptions?.length" class="mt-2 space-y-1">
-                                                <div v-for="option in question.cqoptions" :key="option.id"
-                                                    class="text-xs flex items-center">
-                                                    <span class="mr-2">{{ bengaliChars[question.cqoptions.indexOf(option)] }}.</span>
-                                                    <span class="font-medium">
-                                                        <LatexRenderer :content="option.cq_text" />
-                                                    </span>
-
-                                                    <span class="ml-2 text-gray-500">({{ option.mark }} pts)</span>
-                                                </div>
+                                        <!-- CQ Options -->
+                                        <div v-if="question.cqoptions?.length" class="mt-2 space-y-1">
+                                            <div v-for="option in question.cqoptions" :key="option.id"
+                                                class="text-xs flex items-center">
+                                                <span class="mr-2">{{ bengaliChars[question.cqoptions.indexOf(option)] }}.</span>
+                                                <span class="font-medium">
+                                                    <LatexRenderer :content="option.cq_text" />
+                                                </span>
+                                                <span class="ml-2 text-gray-500">({{ option.mark }} pts)</span>
                                             </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <span :class="{
-                                                'px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800': question.format === 'cq',
-                                                'px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800': question.format === 'mcq',
-                                                'px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800': question.format === 'mix'
-                                            }">
-                                                {{ question.format.toUpperCase() }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div class="flex items-center justify-end space-x-2">
-                                                <button @click="editQuestion(question)"
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <span :class="{
+                                            'px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800': question.format === 'cq',
+                                            'px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800': question.format === 'mcq',
+                                            'px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800': question.format === 'mix'
+                                        }">
+                                            {{ question.format.toUpperCase() }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <div class="flex items-center justify-end space-x-2">
+                                            <Link :href="route('question.edit', question.id)">
+                                                <button
                                                     class="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition duration-200"
                                                     title="Edit">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor"
@@ -895,250 +517,27 @@ const bengaliChars = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', '�
                                                         </path>
                                                     </svg>
                                                 </button>
-                                                <button @click="deleteQuestion(question.id)"
-                                                    class="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50 transition duration-200"
-                                                    title="Delete">
-                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                                        </path>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
+                                            </Link>
+                                            <button @click="deleteQuestion(question.id)"
+                                                class="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50 transition duration-200"
+                                                title="Delete">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                                    </path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-
-        <!-- Question Modal Dialog -->
-        <el-dialog :title="questionForm.id ? 'Edit Question' : 'Add New Question'" v-model="isQuestionModalVisible"
-            width="60%" class="rounded-lg">
-            <div class="space-y-4">
-                <!-- Topic Selection -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Topic</label>
-                    <el-select v-model="questionForm.topic_id" placeholder="Select Topic" class="w-full" required
-                        filterable :class="{ 'is-invalid': errors.topic_id }">
-                        <el-option v-for="topic in topics" :key="topic.id" :label="topic.name" :value="topic.id" />
-                    </el-select>
-                    <p v-if="errors.topic_id" class="mt-1 text-sm text-red-600">{{ errors.topic_id }}</p>
-                </div>
-
-                <!-- Question Type -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Question Type</label>
-                    <el-select v-model="questionForm.type_id" placeholder="Select Type" class="w-full" required multiple
-                        filterable :class="{ 'is-invalid': errors.type_id }">
-                        <el-option v-for="type in types" :key="type.id" :label="type.name" :value="type.id" />
-                    </el-select>
-                    <div v-if="questionForm.type_id.length" class="mt-2">
-                        <span class="text-xs text-gray-500">Selected types:
-                            {{questionForm.type_id.map(id => types.find(t => t.id === id)?.name).join(', ')}}
-                        </span>
-                    </div>
-                    <p v-if="errors.type_id" class="mt-1 text-sm text-red-600">{{ errors.type_id }}</p>
-                </div>
-
-                <!-- Difficulty Level -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Difficulty Level</label>
-                    <el-select v-model="questionForm.level_id" placeholder="Select Level" class="w-full" required
-                        :class="{ 'is-invalid': errors.level_id }">
-                        <el-option v-for="level in levels" :key="level.id" :label="level.name" :value="level.id" />
-                    </el-select>
-                    <p v-if="errors.level_id" class="mt-1 text-sm text-red-600">{{ errors.level_id }}</p>
-                </div>
-
-                <!-- Board -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Board</label>
-                    <el-select v-model="questionForm.board_id" placeholder="Select Board" class="w-full" required
-                        :class="{ 'is-invalid': errors.board_id }">
-                        <el-option v-for="board in boards" :key="board.id" :label="board.name" :value="board.id" />
-                    </el-select>
-                    <p v-if="errors.board_id" class="mt-1 text-sm text-red-600">{{ errors.board_id }}</p>
-                </div>
-
-                <!-- Question Format -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Format</label>
-                    <el-radio-group v-model="questionForm.format" class="w-full">
-                        <el-radio-button label="mcq">MCQ</el-radio-button>
-                        <el-radio-button label="cq">CQ</el-radio-button>
-                        <el-radio-button label="mix">Mixed</el-radio-button>
-                    </el-radio-group>
-                    <p v-if="errors.format" class="mt-1 text-sm text-red-600">{{ errors.format }}</p>
-                </div>
-
-                <!-- Question Text -->
-                <div class="question-input-section">
-                    <!-- Header with label and mark input -->
-                    <div class="flex justify-between items-end mb-2">
-                        <label class="question-label">
-                            Question Text
-                            <span class="required-indicator">*</span>
-                        </label>
-
-                        <div v-if="['cq','mix'].includes(questionForm.format)" class="mark-input-container">
-                            <el-input type="number" placeholder="Points" v-model="questionForm.mark" class="mark-input"
-                                min="0" />
-                        </div>
-                    </div>
-
-                    <!-- Question text area -->
-                    <div class="relative">
-                        <el-input v-model="questionForm.question_text" type="textarea" :rows="4"
-                            placeholder="Type your question here..." class="question-textarea"
-                            :class="{ 'error-border': errors.question_text }" />
-                        <div v-if="!questionForm.question_text" class="textarea-placeholder-hint">
-                            Be specific and clear with your question
-                        </div>
-                    </div>
-
-                    <!-- Error message -->
-                    <p v-if="errors.question_text" class="error-message">
-                        <i class="el-icon-warning-outline"></i> {{ errors.question_text }}
-                    </p>
-                </div>
-
-                <!-- Explanation -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Explanation (Optional)</label>
-
-                    <el-input v-model="questionForm.explanation" type="textarea" :rows="2"
-                        placeholder="Enter explanation if needed" class="w-full"
-                        :class="{ 'is-invalid': errors.explanation }" />
-                    <p v-if="errors.explanation" class="mt-1 text-sm text-red-600">{{ errors.explanation }}</p>
-                </div>
-
-                <!-- Options (only show for MCQ or Mixed) -->
-                <div v-if="['mcq'].includes(questionForm.format)">
-                    <div class="flex justify-between items-center mb-2">
-                        <label class="block text-sm font-medium text-gray-700">Options</label>
-                        <el-button @click="addOption" size="small" type="primary" plain>
-                            Add Option
-                        </el-button>
-                    </div>
-
-                    <div v-for="(option, inx) in questionForm.options" :key="inx"
-                        class="flex items-center mb-2 space-x-2">
-                        <el-input v-model="option.option_text" placeholder="Option text" class="flex-1"
-                            :class="{ 'is-invalid': errors[`options.${index}.option_text`] }" />
-                        <el-checkbox v-model="option.is_correct">Correct</el-checkbox>
-                        <el-button @click="removeOption(inx)" type="danger" plain size="small"
-                            :disabled="questionForm.options.length <= 2">
-                            Remove
-                        </el-button>
-                    </div>
-                    <p v-if="errors.options" class="mt-1 text-sm text-red-600">{{ errors.options }}</p>
-                </div>
-
-                <div v-if="['cq'].includes(questionForm.format)" class="cq-options-container">
-                    <div class="options-header">
-                        <h3 class="text-lg font-semibold text-gray-800">Questions</h3>
-                        <el-button @click="addcq" size="small" type="primary" class="add-option-btn"
-                            icon="el-icon-plus">
-                            Add Option
-                        </el-button>
-                    </div>
-
-                    <div class="options-list space-y-3">
-                        <div v-for="(cqo, index) in questionForm.cq" :key="index"
-                            class="option-item bg-gray-50 p-3 rounded-lg shadow-sm hover:shadow transition-shadow">
-                            <div class="flex items-center gap-3 w-full">
-                                <!-- Option Text (80% width) -->
-                                <div class="w-4/5">
-                                    <el-input v-model="cqo.cq_text" placeholder="Enter option text"
-                                        class="option-text-input w-full"
-                                        :class="{ 'is-invalid': errors[`cq.${index}.cq_text`] }" />
-                                    <span v-if="errors[`cq.${index}.cq_text`]" class="error-message">
-                                        {{ errors[`cq.${index}.cq_text`] }}
-                                    </span>
-                                </div>
-
-                                <!-- Points (20% width) -->
-                                <div class="w-1/5">
-                                    <el-input v-model="cqo.mark" placeholder="Points" class="points-input w-full" />
-                                </div>
-
-                                <el-button @click="removecq(index)" type="danger" plain size="small" class="remove-btn"
-                                    :disabled="questionForm.cq.length <= 0" icon="el-icon-delete">
-                                    Remove
-                                </el-button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <p v-if="errors.cq" class="error-message mt-2">{{ errors.cq }}</p>
-                </div>
-            </div>
-
-            <template #footer>
-                <div class="flex justify-end space-x-3">
-                    <el-button @click="isQuestionModalVisible = false"
-                        class="border border-gray-300 text-gray-700 hover:bg-gray-50">
-                        Cancel
-                    </el-button>
-                    <el-button @click="submitQuestion" :disabled="questionForm.processing" type="primary"
-                        class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md">
-                        <span v-if="questionForm.processing">Processing...</span>
-                        <span v-else>{{ questionForm.id ? 'Update' : 'Create' }}</span>
-                    </el-button>
-                </div>
-            </template>
-        </el-dialog>
-
-        <!-- Topic Modal Dialog -->
-        <el-dialog :title="topicForm.id ? 'Edit Topic' : 'Add New Topic'" v-model="isTopicModalVisible" width="40%"
-            class="rounded-lg">
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Chapter</label>
-                    <el-select v-model="topicForm.chapter_id" placeholder="Select Chapter" class="w-full" required
-                        filterable :class="{ 'is-invalid': errors.chapter_id }">
-                        <el-option v-for="chapter in filteredChapters" :key="chapter.id" :label="chapter.name"
-                            :value="chapter.id" />
-                    </el-select>
-                    <p v-if="errors.chapter_id" class="mt-1 text-sm text-red-600">{{ errors.chapter_id }}</p>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Topic Name</label>
-                    <el-input v-model="topicForm.name" placeholder="Enter topic name" class="w-full" required
-                        :class="{ 'is-invalid': errors.name }">
-                        <template #prefix>
-                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                </path>
-                            </svg>
-                        </template>
-                    </el-input>
-                    <p v-if="errors.name" class="mt-1 text-sm text-red-600">{{ errors.name }}</p>
-                </div>
-            </div>
-
-            <template #footer>
-                <div class="flex justify-end space-x-3">
-                    <el-button @click="isTopicModalVisible = false"
-                        class="border border-gray-300 text-gray-700 hover:bg-gray-50">
-                        Cancel
-                    </el-button>
-                    <el-button @click="submitTopic" :disabled="topicForm.processing" type="primary"
-                        class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md">
-                        <span v-if="topicForm.processing">Processing...</span>
-                        <span v-else>{{ topicForm.id ? 'Update' : 'Create' }}</span>
-                    </el-button>
-                </div>
-            </template>
-        </el-dialog>
     </AuthenticatedLayout>
 </template>
 
@@ -1160,45 +559,26 @@ const bengaliChars = ['ক', 'খ', 'গ', 'ঘ', 'ঙ', 'চ', 'ছ', 'জ', '�
     --el-button-active-bg-color: theme('colors.green.800');
 }
 
+/* Loading animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
 /* Responsive adjustments */
 @media (max-width: 1024px) {
-
     .el-select,
     .el-button {
         width: 100%;
     }
 }
 
-.cq-options-container {
-    @apply border border-gray-200 rounded-lg p-4 bg-white;
-}
-
-.options-header {
-    @apply flex justify-between items-center mb-4;
-}
-
-.add-option-btn {
-    @apply shadow-sm;
-}
-
-.option-item {
-    @apply border border-gray-100;
-}
-
-.option-text-input {
-    @apply flex-1;
-}
-
-.points-input {
-    @apply text-center;
-}
-
 .error-message {
     @apply text-sm text-red-500 font-medium;
-}
-
-.remove-btn:hover {
-    @apply transform scale-105;
 }
 
 .is-invalid {

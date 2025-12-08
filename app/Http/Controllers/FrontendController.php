@@ -177,7 +177,7 @@ class FrontendController extends Controller
             ->first();
         // dd($latestExam);
 
-        return Inertia::render('UserDashboard/Questions/QuestionSetting', [
+        return Inertia::render('UserDashboard/Questions/question-setting', [
             'savedquestion' => $latestExam ? [$latestExam] : [],
             'institute' => $institute
         ]);
@@ -245,7 +245,7 @@ public function updateIn(Request $request)
                 ])
                 ->findOrFail($id);
 
-            return Inertia::render('UserDashboard/Questions/QuestionSetting', [
+            return Inertia::render('UserDashboard/Questions/question-setting', [
                 'savedquestion' => $question ? [$question] : [],
                 'institute' => $institute,
             ]);

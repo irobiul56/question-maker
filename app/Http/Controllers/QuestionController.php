@@ -49,20 +49,29 @@ class QuestionController extends Controller
      */
     public function create()
     {
-        //
+         return Inertia::render('Question/Form', [
+        'topics' => Topic::all(),
+        'levels' => Level::all(),
+        'types' => Type::all(),
+        'boards' => Board::all(),
+        'chapters' => Chapter::all(),
+        'subjects' => Subject::all(),
+        'classes' => AcademicClass::all(),
+        'education' => Education::all()
+    ]);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-   public function store(Request $request)
+  public function store(Request $request)
 {
 
-    // dd($request-> all());
+    //dd($request-> all());
 
    $validated = $request->validate([
     // Common fields
-    'academic_classes_id' => 'required|exists:academic_classes,id',
+    'class_id' => 'required|exists:academic_classes,id',
     'subject_id' => 'required|exists:subjects,id',
     'chapter_id' => 'required|exists:chapters,id',
     'topic_id' => 'required|exists:topics,id',
@@ -88,9 +97,11 @@ class QuestionController extends Controller
     'mark' => 'nullable|numeric|required_if:format,mix|min:0',
 ]);
 
+//dd('ok');
+
     // Create the question
     $question = Question::create([
-        'academic_classes_id' => $validated['academic_classes_id'],
+        'academic_classes_id' => $validated['class_id'],
         'subject_id' => $validated['subject_id'],
         'chapter_id' => $validated['chapter_id'],
         'topic_id' => $validated['topic_id'],
@@ -140,9 +151,19 @@ class QuestionController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Question $question)
     {
-        //
+          return Inertia::render('Question/Form', [
+        'question' => $question->load(['topic', 'options', 'cqoptions', 'type']),
+        'topics' => Topic::all(),
+        'levels' => Level::all(),
+        'types' => Type::all(),
+        'boards' => Board::all(),
+        'chapters' => Chapter::all(),
+        'subjects' => Subject::all(),
+        'classes' => AcademicClass::all(),
+        'education' => Education::all()
+    ]);
     }
 
     /**
@@ -150,20 +171,23 @@ class QuestionController extends Controller
      */
     public function update(Request $request, Question $question)
     {
-        // dd($request -> all());
+       //dd($request -> all());
    $validated = $request->validate([
          // Common fields
+    'class_id' => 'required|exists:academic_classes,id',
+    'subject_id' => 'required|exists:subjects,id',
+    'chapter_id' => 'required|exists:chapters,id',
     'topic_id' => 'required|exists:topics,id',
     'type_id' => 'required|array|min:1',
     'type_id.*' => 'exists:types,id',
     'level_id' => 'required|exists:levels,id',
     'board_id' => 'nullable|exists:boards,id',
     'format' => 'required|in:mcq,cq,mix',
-    'question_text' => 'required|string|max:1000',
-    'explanation' => 'nullable|string|max:2000',
+    'question_text' => 'required|string',
+    'explanation' => 'nullable|string',
 
     // MCQ fields (only required if format=mcq)
-    'options' => 'nullable|array|required_if:format,mcq|min:2',
+    'options' => 'nullable|array|required_if:format,mcq',
     'options.*.option_text' => 'nullable|string|required_if:format,mcq|max:500',
     'options.*.is_correct' => 'nullable|boolean|required_if:format,mcq',
 
@@ -175,6 +199,8 @@ class QuestionController extends Controller
     // Mix fields (only required if format=mix)
     'mark' => 'nullable|numeric|required_if:format,mix|min:0',
     ]);
+
+//dd('ok');
 
     $question -> update([
         'topic_id' => $request -> topic_id,

@@ -133,6 +133,15 @@ const deleteSubject = (subjectId) => {
         }
     )}
 }
+
+const getClassName = (classId) => {
+  if (!classId || !classes.value.length) return 'N/A'
+  
+  // Convert both IDs to strings for comparison
+  const foundClass = classes.value.find(c => String(c.id) === String(classId))
+  return foundClass?.name || 'N/A'
+}
+
 </script>
 
 <template>
@@ -246,7 +255,7 @@ const deleteSubject = (subjectId) => {
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {{ classes.find(c => c.id === subject.academic_classes_id)?.name || 'N/A' }}
+                                    {{ getClassName(subject.academic_classes_id) }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="flex items-center justify-end space-x-2">

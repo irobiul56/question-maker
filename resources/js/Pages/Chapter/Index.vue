@@ -7,10 +7,10 @@ import { usePage, useForm } from '@inertiajs/vue3';
 import { ElMessage } from "element-plus";
 
 const { props } = usePage()
-const chapters = ref(props.data)
-const education = ref(props.education)
-const classes = ref(props.classes)
-const subjects = ref(props.subjects)
+const chapters = ref(props.data?.length ? props.data : [])
+const education = ref(props.education?.length ? props.education : [])
+const classes = ref(props.classes?.length ? props.classes : [])
+const subjects = ref(props.subjects?.length ? props.subjects : [])
 
 const itemsPerPage = ref(10)
 const currentPage = ref(1)
@@ -78,27 +78,43 @@ const groupedChapters = computed(() => {
     const groups = {}
     
     filteredChapters.value.forEach(chapter => {
-        const classId = chapter.subject?.academic_classes_id
-        if (!classId) return
-        
-        if (!groups[classId]) {
-            const classObj = classes.value.find(c => c.id === classId)
-            groups[classId] = {
-                class: classObj,
-                subjects: {}
+        try {
+            if (!chapter?.subject) return
+            
+            // More flexible property access
+            const classId = chapter.subject?.academic_classes_id || 
+                          chapter.subject?.class_id ||
+                          chapter.subject?.academicClass?.id
+            
+            if (!classId) return
+            
+            const classObj = classes.value.find(c => c.id == classId) // Loose equality
+            if (!classObj) return
+            
+            if (!groups[classId]) {
+                groups[classId] = {
+                    class: classObj,
+                    subjects: {}
+                }
             }
-        }
-        
-        const subjectId = chapter.subject_id
-        if (!groups[classId].subjects[subjectId]) {
-            const subjectObj = subjects.value.find(s => s.id === subjectId)
-            groups[classId].subjects[subjectId] = {
-                subject: subjectObj,
-                chapters: []
+            
+            const subjectId = chapter.subject_id || chapter.subject?.id
+            if (!subjectId) return
+            
+            const subjectObj = subjects.value.find(s => s.id == subjectId)
+            if (!subjectObj) return
+            
+            if (!groups[classId].subjects[subjectId]) {
+                groups[classId].subjects[subjectId] = {
+                    subject: subjectObj,
+                    chapters: []
+                }
             }
+            
+            groups[classId].subjects[subjectId].chapters.push(chapter)
+        } catch (error) {
+            console.error('Error processing chapter:', chapter, error)
         }
-        
-        groups[classId].subjects[subjectId].chapters.push(chapter)
     })
     
     return groups
@@ -109,6 +125,9 @@ const flattenedChapters = computed(() => {
     const result = [];
     
     Object.values(groupedChapters.value).forEach(classGroup => {
+        // Add null check for classGroup.class
+        if (!classGroup || !classGroup.class) return;
+        
         const classId = classGroup.class.id;
         const isClassExpanded = expandedClasses.value[classId] !== false;
         
@@ -124,6 +143,9 @@ const flattenedChapters = computed(() => {
         
         if (isClassExpanded) {
             Object.values(classGroup.subjects).forEach(subjectGroup => {
+                // Add null check for subjectGroup.subject
+                if (!subjectGroup || !subjectGroup.subject) return;
+                
                 const subjectId = subjectGroup.subject.id;
                 const isSubjectExpanded = expandedSubjects.value[subjectId] !== false;
                 
@@ -137,9 +159,10 @@ const flattenedChapters = computed(() => {
                     indentLevel: 1
                 });
                 
-                if (isSubjectExpanded) {
-                    // Add chapters
+                if (isSubjectExpanded && subjectGroup.chapters) {
+                    // Add chapters with null check
                     subjectGroup.chapters.forEach(chapter => {
+                        if (!chapter) return;
                         result.push({
                             type: 'chapter',
                             ...chapter,
@@ -385,10 +408,28 @@ const deleteChapter = (chapterId) => {
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <template v-if="paginatedChapters.length === 0">
+                            <template v-if="isLoading">
+                                <tr>
+                                    <td colspan="4" class="px-6 py-4 text-center">
+                                        <div class="flex justify-center items-center space-x-2">
+                                            <svg class="animate-spin h-5 w-5 text-blue-500" viewBox="0 0 24 24">
+                                                <!-- Loading spinner -->
+                                            </svg>
+                                            <span>Loading chapters...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+
+                            <template v-else-if="paginatedChapters.length === 0">
                                 <tr>
                                     <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
-                                        No chapters found matching your criteria.
+                                        <div v-if="selectedEducation || selectedClass || selectedSubject">
+                                            No chapters found for the selected filters.
+                                        </div>
+                                        <div v-else>
+                                            No chapters available. Please add some chapters.
+                                        </div>
                                     </td>
                                 </tr>
                             </template>

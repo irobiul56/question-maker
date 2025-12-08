@@ -153,64 +153,117 @@ function setColumns(count) {
     columnCount.value = count;
 }
 
-const printQuestions = () => {
+const printQuestions = async () => {
     isPrinting.value = true;
     printError.value = false;
-    const originalHTML = document.body.innerHTML;
-    const originalScrollPos = window.scrollY;
-
+    
     try {
+        // Get all style tags from the document
+        const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+            .map(style => style.outerHTML)
+            .join('\n');
+        
+        // Get current settings
+        const currentFontClass = fontClasses[selectedFont.value];
+        const currentFontSize = `${fontSize.value}px`;
+        const columnGap = showColumnDivider.value ? '1.5rem' : '0.5rem';
+        const columnRule = showColumnDivider.value ? '1px solid rgba(0, 0, 0, 0.2)' : 'none';
+        
+        // Create a clone of the questions container
         const element = document.getElementById('questions-container');
         const clone = element.cloneNode(true);
-        const contentDiv = clone.querySelector('.question-content > div');
         
-        if (contentDiv) {
-            contentDiv.style.columnCount = columnCount.value;
-            contentDiv.style.columnGap = showColumnDivider.value ? '1.5rem' : '0.5rem';
-            contentDiv.style.columnRule = showColumnDivider.value ? '1px solid rgba(0, 0, 0, 0.2)' : 'none';
+        // Remove any existing column styles from the clone
+        const questionContent = clone.querySelector('.question-content > div');
+        if (questionContent) {
+            questionContent.style.columnCount = '';
+            questionContent.style.columnGap = '';
+            questionContent.style.columnRule = '';
         }
-
-        const printContainer = document.createElement('div');
-        printContainer.id = 'print-container';
-        printContainer.appendChild(clone);
-
-        const printStyles = document.createElement('style');
-        printStyles.innerHTML = `
-            @page { size: A4; margin: 10mm; }
-            body { background: white !important; }
-            #print-container {
-                width: 210mm !important;
-                margin: 0 auto !important;
-                padding: 10mm !important;
-            }
-            .break-inside-avoid { 
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-            }
+        
+        // Create print HTML with proper column styles
+        const printHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Print Questions</title>
+                <meta charset="UTF-8">
+                ${styles}
+                <style>
+                    @page {
+                        size: A4;
+                        margin: 10mm;
+                    }
+                    body {
+                        margin: 0;
+                        padding: 10mm;
+                        background: white !important;
+                        font-size: ${currentFontSize} !important;
+                    }
+                    .question-content > div {
+                        column-count: ${columnCount.value} !important;
+                        column-gap: ${columnGap} !important;
+                        column-rule: ${columnRule} !important;
+                    }
+                    .break-inside-avoid {
+                        page-break-inside: avoid !important;
+                        break-inside: avoid !important;
+                    }
+                    .print-font-inherit {
+                        font-family: inherit !important;
+                        font-size: inherit !important;
+                    }
+                </style>
+            </head>
+            <body class="${currentFontClass} print-font-inherit" style="font-size: ${currentFontSize} !important;">
+                ${clone.outerHTML}
+            </body>
+            </html>
         `;
-
-        document.body.innerHTML = '';
-        document.body.appendChild(printStyles);
-        document.body.appendChild(printContainer);
-
-        const reloadTimeout = setTimeout(() => {
-            window.location.reload();
-        }, 3000);
-
-        window.onafterprint = () => {
-            clearTimeout(reloadTimeout);
-            window.location.reload();
+        
+        // Create and configure the iframe
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = 'none';
+        
+        document.body.appendChild(iframe);
+        
+        // Wait for iframe to load
+        await new Promise(resolve => {
+            iframe.onload = resolve;
+            iframe.srcdoc = printHTML;
+        });
+        
+        // Wait for layout to stabilize
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Focus and print
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        
+        // Clean up
+        const cleanUp = () => {
+            document.body.removeChild(iframe);
+            isPrinting.value = false;
         };
-
-        window.print();
-
+        
+        if (iframe.contentWindow.matchMedia) {
+            const mediaQueryList = iframe.contentWindow.matchMedia('print');
+            mediaQueryList.addListener((mql) => {
+                if (!mql.matches) cleanUp();
+            });
+        }
+        
+        setTimeout(cleanUp, 3000);
+        
     } catch (error) {
         console.error('Print failed:', error);
         printError.value = true;
-        document.body.innerHTML = originalHTML;
-        window.scrollTo(0, originalScrollPos);
         isPrinting.value = false;
-        window.location.reload();
     }
 };
 
@@ -912,18 +965,33 @@ button[disabled] {
   column-count: 3 !important;
 }
 
-/* For print view */
-@media print {
-  .columns-1 {
-    column-count: 1 !important;
-  }
-  .columns-2 {
-    column-count: 2 !important;
-  }
-  .columns-3 {
-    column-count: 3 !important;
-  }
+/* Font classes */
+.bangla-font {
+    font-family: 'Hind Siliguri', sans-serif !important;
 }
+.font-solaiman-lipi {
+    font-family: 'SolaimanLipi', Arial, sans-serif !important;
+}
+.font-kalpurush {
+    font-family: 'Kalpurush', Arial, sans-serif !important;
+}
+.font-times-new-roman {
+    font-family: 'Times New Roman', serif !important;
+}
+
+/* Print-specific styles */
+@media print {
+    body {
+        font-size: inherit !important;
+        font-family: inherit !important;
+    }
+    .print-font-inherit * {
+        font-family: inherit !important;
+        font-size: inherit !important;
+    }
+}
+
+
 
 
 </style>
