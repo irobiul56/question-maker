@@ -122,42 +122,70 @@ class FrontendController extends Controller
 
 
     public function saveQuestions(Request $request)
-    {
-        // dd(Auth::id());
-        $request->validate([
-            'exam_name' => 'required|string|max:255',
-            'question_ids' => 'required|array',
-            'question_ids.*' => 'exists:questions,id'
+{
+    $request->validate([
+        'exam_name' => 'required|string|max:255',
+        'question_ids' => 'required|array',
+        'question_ids.*' => 'exists:questions,id'
+    ]);
+
+    try {
+        // Create saved question
+        $savedQuestion = Savedquestion::create([
+            'exam_name' => $request->exam_name,
+            'user_id' => Auth::id(),
         ]);
 
-        try {
-            DB::transaction(function () use ($request) {
-                // Create or find existing saved question set
-                $savedQuestion = Savedquestion::firstOrCreate([
-                    'exam_name' => $request->exam_name,
-                    'user_id' => Auth::id(),
-                ]);
+        $savedQuestion->questions()->attach($request->question_ids);
 
-                // Attach questions (will avoid duplicates automatically)
-                $savedQuestion->questions()->syncWithoutDetaching($request->question_ids);
-            });
+        // Debug the redirect URL
+        $redirectUrl = route('qstSetting', ['exam_id' => $savedQuestion->id]);
 
-            return redirect(route('qstSetting'))->with('success','Questions Saved Succefully');
+        return redirect($redirectUrl)
+            ->with('success', 'Questions Saved Successfully!');
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to save questions: ' . $e->getMessage(),
-            ], 500);
-        }
+    } catch (\Exception $e) {
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to save questions: ' . $e->getMessage(),
+        ], 500);
     }
+}
 
 
     //Question Setting
-    public function qstSetting()
-    {
-        $userId = Auth::id();
-        $institute = Institute::where('user_id', $userId)->first(); 
+   public function qstSetting(Request $request, $exam_id = null)
+{
+    $userId = Auth::id();
+    $institute = Institute::where('user_id', $userId)->first(); 
+    
+    // Check if exam_id is provided in the URL
+     $examId = $exam_id ?: $request->query('exam_id');
+
+    // dd($examId);
+    
+    if ($examId) {
+        // Get the specific exam by ID
+        $latestExam = Savedquestion::where('user_id', $userId)
+            ->where('id', $examId)
+            ->with([
+                'user:id,name',
+                'questions' => function($query) {
+                    $query->with([
+                        'options',
+                        'cqoptions',
+                        'academicClass',
+                        'subject',
+                        'chapter',
+                        'lavel'
+                    ])
+                    ->latest();
+                }
+            ])
+            ->first();
+    } else {
+        // Fallback to latest exam
         $latestExam = Savedquestion::where('user_id', $userId)
             ->with([
                 'user:id,name',
@@ -169,19 +197,19 @@ class FrontendController extends Controller
                         'subject',
                         'chapter',
                         'lavel'
-                        ])
-                        ->latest();
+                    ])
+                    ->latest();
                 }
             ])
             ->latest()
             ->first();
-        // dd($latestExam);
-
-        return Inertia::render('UserDashboard/Questions/question-setting', [
-            'savedquestion' => $latestExam ? [$latestExam] : [],
-            'institute' => $institute
-        ]);
     }
+
+    return Inertia::render('UserDashboard/Questions/question-setting', [
+        'savedquestion' => $latestExam ? [$latestExam] : [],
+        'institute' => $institute
+    ]);
+}
 
 
 

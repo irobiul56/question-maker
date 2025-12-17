@@ -63,7 +63,7 @@ Route::middleware(['auth','admin']) -> group(function () {
     Route::get('/question-making', [FrontendController::class, 'qstIndex'])->name('qstIndex');
     Route::get('/selected-question', [FrontendController::class, 'sltquestion'])->name('sltquestion');
     Route::post('/save-questions', [FrontendController::class, 'saveQuestions'])->name('save.questions');
-    Route::get('/question-setting', [FrontendController::class, 'qstSetting'])->name('qstSetting');
+    Route::get('/question-setting/{exam_id?}', [FrontendController::class, 'qstSetting'])->name('qstSetting');
     Route::get('/question-show/{id}', [FrontendController::class, 'qstshow'])->name('qstshow');
     Route::resource('my-questions', MyQuestionController::class);
     Route::get('/contact-us', [ContactUsController::class, 'contactus'])->name('contactus');
