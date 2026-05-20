@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicClass;
+use App\Models\Blog;
 use App\Models\board;
+use App\Models\Category;
 use App\Models\Chapter;
 use App\Models\Education;
 use App\Models\Institute;
@@ -16,27 +18,49 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
 
-class FrontendController extends Controller
+class ExamBlogController extends Controller
 {
+
+    public function BlogList(){
+        $bloglist = Blog::with([
+                'category',
+                'questions' => function($query) {
+                    $query->with([
+                        'academicClass',
+                        'options',
+                        'subject',
+                        'lavel'
+                        ])
+                        ->get();
+                }
+            ])->orderBy('id', 'desc')->get();
+
+        return Inertia::render('Blog/BlogList', [
+            'data' => $bloglist
+        ]);
+    }
     
-   public function qstIndex(Request $request) {
+   public function blogexamform(Request $request) {
     $education = Education::all();
     $classes = AcademicClass::all();
     $subjects = Subject::all();
     $chapters = Chapter::all();
+    $categories = Category::all();
 
-    return Inertia::render('UserDashboard/Questions/Index', [
+    return Inertia::render('Blog/Index', [
         'education' => $education,
         'classes' => $classes,
         'subjects' => $subjects,
         'chapters' => $chapters,
+        'categories' => $categories,
     ]);
 }
 
 
    // In your controller
-public function sltquestion(Request $request)
+public function sltquestionblog(Request $request)
 {
     $request->validate([
         'chapter_id' => 'required|array', // Changed to array
@@ -128,7 +152,7 @@ public function sltquestion(Request $request)
     // Get available years from boards table
     $availableYears = Board::distinct('year')->orderBy('year', 'desc')->pluck('year');
 
-    return Inertia::render('UserDashboard/Questions/SelectedQuestion', [
+    return Inertia::render('Blog/BlogForm', [
         'questions' => $questions,
         'groupedQuestions' => $groupedQuestions,
         'chapters' => $chapters, // Changed to plural
@@ -137,6 +161,7 @@ public function sltquestion(Request $request)
         'level' => $level,
         'availableYears' => $availableYears,
         'boards' => Board::all(),
+        'categories' => Category::all(),
         'filters' => $request->only([
             'chapter_id', 
             'topic_id', 
@@ -145,34 +170,39 @@ public function sltquestion(Request $request)
             'board_ids', 
             'years',
             'question_types',
-            'levels'
+            'levels',
+            'categories'
         ])
     ]);
 }
 
 
-    public function saveQuestions(Request $request)
+    public function saveQuestionsBlog(Request $request)
 {
+
+// dd($request->all());
     $request->validate([
-        'exam_name' => 'required|string|max:255',
+        'blog_title' => 'required|string|max:255',
+        'blog_description' => 'required|string|max:255',
+        'blog_category' => 'exists:categories,id',
         'question_ids' => 'required|array',
         'question_ids.*' => 'exists:questions,id'
     ]);
 
     try {
         // Create saved question
-        $savedQuestion = Savedquestion::create([
-            'exam_name' => $request->exam_name,
+        $savedQuestionblog = Blog::create([
+            'title' => $request->blog_title,
+            'slug' => Str::slug($request->blog_title),
+            'description' => $request->blog_description,
+            'category_id' => $request->blog_category,
             'user_id' => Auth::id(),
+            
         ]);
 
-        $savedQuestion->questions()->attach($request->question_ids);
+        $savedQuestionblog->questions()->attach($request->question_ids);
 
-        // Debug the redirect URL
-        $redirectUrl = route('qstSetting', ['exam_id' => $savedQuestion->id]);
-
-        return redirect($redirectUrl)
-            ->with('success', 'Questions Saved Successfully!');
+      return redirect(route('blog.list'))->with('Created Successfully');
 
     } catch (\Exception $e) {
         

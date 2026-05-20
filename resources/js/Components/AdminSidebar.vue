@@ -1,13 +1,19 @@
-<!-- UserSidebar.vue -->
 <script setup>
-import { defineProps } from 'vue';
+import { ref, watch } from 'vue';
 import NavLink from '@/Components/NavLink.vue';
 
 const props = defineProps({
   isCollapsed: Boolean
 });
 
-// Route helper function for active state
+// State to track if the Blog dropdown is open
+const isBlogOpen = ref(false);
+
+// Automatically close dropdown if sidebar is collapsed by the user
+watch(() => props.isCollapsed, (val) => {
+  if (val) isBlogOpen.ref = false;
+});
+
 const isRouteActive = (patterns) => {
   const currentRoute = route().current();
   if (!currentRoute) return false;
@@ -23,53 +29,100 @@ const isRouteActive = (patterns) => {
 </script>
 
 <template>
-  <aside class="min-h-screen bg-white shadow-lg p-4 transition-all duration-300 border-r border-gray-100 flex flex-col"
-    :class="isCollapsed ? 'w-20' : 'w-64'">
-    <nav>
+  <aside 
+    class="min-h-screen bg-white shadow-lg p-4 transition-all duration-300 border-r border-gray-100 flex flex-col"
+    :class="isCollapsed ? 'w-20' : 'w-64'"
+  >
+    <nav class="flex-1">
       <ul class="space-y-2">
+        <!-- Dashboard -->
         <li>
           <NavLink :href="route('dashboard')" :active="isRouteActive(['dashboard', 'dashboard.*'])"
             class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
             :class="isCollapsed ? 'justify-center px-2' : 'px-3'">
-            <div class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0"
-                :class="isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              <span v-if="!isCollapsed" class="whitespace-nowrap">Dashboard</span>
-            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" :class="isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <span v-if="!isCollapsed" class="whitespace-nowrap font-medium text-gray-700">Dashboard</span>
           </NavLink>
         </li>
 
+        <!-- Academic Sections (Questions, Class, Subject, etc.) -->
+        <div v-if="!isCollapsed" class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          Academic
+        </div>
+
         <li>
-          <NavLink :href="route('question.index')" :active="isRouteActive(['question', 'question.*'])"
+          <NavLink :href="route('question.index')" :active="isRouteActive(['question.*'])"
             class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
             :class="isCollapsed ? 'justify-center px-2' : 'px-3'">
-            <div class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0"
-                :class="isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              <span v-if="!isCollapsed" class="whitespace-nowrap">Questions</span>
-            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" :class="isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span v-if="!isCollapsed">Questions</span>
           </NavLink>
         </li>
 
+        <!-- Blog & Category Group -->
         <li>
-          <NavLink :href="route('class.index')" :active="isRouteActive(['class', 'class.*'])"
-                class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                :class="isCollapsed ? 'justify-center px-2' : 'px-3'">
-            <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0"
-                    :class="isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                <span v-if="!isCollapsed" class="whitespace-nowrap">Class</span>
-            </div>
-        </NavLink>
+          <button 
+            @click="isBlogOpen = !isBlogOpen"
+            class="w-full flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors text-gray-700 focus:outline-none"
+            :class="[
+                isCollapsed ? 'justify-center px-2' : 'px-3',
+                isRouteActive(['level.*']) ? 'bg-gray-50' : ''
+            ]"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" :class="isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 2v6h6" />
+            </svg>
+            <template v-if="!isCollapsed">
+              <span class="flex-1 text-left whitespace-nowrap font-medium">Resources</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transform transition-transform" :class="isBlogOpen ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </template>
+          </button>
+
+          <!-- Dropdown Children -->
+          <transition
+            enter-active-class="transition duration-100 ease-out"
+            enter-from-class="transform scale-95 opacity-0"
+            enter-to-class="transform scale-100 opacity-100"
+            leave-active-class="transition duration-75 ease-in"
+            leave-from-class="transform scale-100 opacity-100"
+            leave-to-class="transform scale-95 opacity-0"
+          >
+            <ul v-if="isBlogOpen && !isCollapsed" class="mt-1 ml-10 space-y-1">
+              <li>
+                <NavLink :href="route('blog.list')" :active="isRouteActive(['blog.list*'])" class="block p-2 text-sm text-gray-600 hover:text-blue-600">
+                  Blog Posts
+                </NavLink>
+              </li>
+              <li>
+                <NavLink :href="route('category.index')" :active="isRouteActive(['category.*'])" class="block p-2 text-sm text-gray-600 hover:text-blue-600">
+                  Categories
+                </NavLink>
+              </li>
+            </ul>
+          </transition>
+        </li>
+
+        <!-- Setup/Config Section -->
+        <div v-if="!isCollapsed" class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          Configuration
+        </div>
+
+        <li>
+          <NavLink :href="route('class.index')" :active="isRouteActive(['class.*'])"
+            class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
+            :class="isCollapsed ? 'justify-center px-2' : 'px-3'">
+            <svg xmlns="http://www.w3.org/2000/svg" :class="isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253" />
+            </svg>
+            <span v-if="!isCollapsed">Class</span>
+          </NavLink>
         </li>
 
         <li>
@@ -147,24 +200,19 @@ const isRouteActive = (patterns) => {
             </div>
           </NavLink>
         </li> 
-
+        
         <li>
-          <NavLink :href="route('board.index')" :active="isRouteActive(['board', 'board.*'])"
+          <NavLink :href="route('board.index')" :active="isRouteActive(['board.*'])"
             class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
             :class="isCollapsed ? 'justify-center px-2' : 'px-3'">
-            <div class="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0" 
-                  :class="isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'" 
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10M9 16h6" />
-              </svg>
-              <span v-if="!isCollapsed" class="whitespace-nowrap">Board</span>
-            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" :class="isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2" />
+            </svg>
+            <span v-if="!isCollapsed">Board</span>
           </NavLink>
         </li>
 
-        <li>
+         <li>
           <NavLink :href="route('education.index')" :active="isRouteActive(['education', 'education.*'])"
             class="flex items-center p-3 rounded-lg hover:bg-gray-50 transition-colors"
             :class="isCollapsed ? 'justify-center px-2' : 'px-3'">
@@ -182,5 +230,17 @@ const isRouteActive = (patterns) => {
 
       </ul>
     </nav>
+
+    <!-- Sidebar Footer / User Profile (Optional) -->
+    <div class="border-t border-gray-100 pt-4 mt-auto">
+      
+       <NavLink :href="route('logout')" method="post" class="w-full flex items-center p-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors" :class="isCollapsed ? 'justify-center' : ''">
+         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" :class="isCollapsed ? '' : 'mr-3'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+         </svg>
+         <span v-if="!isCollapsed" class="font-medium">Logout</span>
+       </NavLink>
+    
+    </div>
   </aside>
 </template>

@@ -1,5 +1,5 @@
 <script setup>
-import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue';
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue"
 import { Head } from '@inertiajs/vue3';
 import { usePage, useForm, router } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
@@ -67,7 +67,7 @@ const generateQuestions = () => {
         return;
     }
 
-    router.get(route('sltquestion'), {
+    router.get(route('sltquestionblog'), {
         exam_name: examName.value,
         chapter_id: selectedChapters.value, // Now passing array
         type: selectedType.value,
@@ -77,9 +77,9 @@ const generateQuestions = () => {
 </script>
 
 <template>
-    <Head title="User Dashboard" />
+    <Head title="Admin Dashboard" />
 
-    <UserDashboardLayout>
+    <AuthenticatedLayout>
 <div class=" bangla w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-8 flex items-center justify-center">
   <div class="w-full max-w-4xl bg-white rounded-xl shadow-2xl overflow-hidden transition-all duration-300 hover:shadow-3xl">
     <!-- Header with version -->
@@ -95,17 +95,12 @@ const generateQuestions = () => {
     <!-- Hero section -->
     <div class="bg-gradient-to-r from-indigo-600 to-blue-800 p-6 md:p-8 text-center">
       <h1 class="text-2xl md:text-3xl lg:text-4xl font-extrabold text-white mb-2 animate-pulse">
-       ফ্রিতে ক্লিকেই প্রশ্ন রেডি
+       অনলাইন এক্সাম তৈরি করুন
       </h1>
       <p class="text-lg md:text-xl text-indigo-100 font-medium">
         প্রশ্ন তৈরি করা এখন আরো সহজ🏆
       </p>
       
-      <div class="mt-6 mb-2">
-        <a href="https://eproshnobank.com/pricing" target="_blank" class="inline-block bg-white text-indigo-600 font-bold px-6 py-3 rounded-lg shadow-md hover:bg-yellow-200 hover:text-indigo-800 transition-all transform hover:scale-105">
-          Subscribe Now!
-        </a>
-      </div>
     </div>
     
     <!-- Form section -->
@@ -116,15 +111,7 @@ const generateQuestions = () => {
         </svg>
       </div>
       
-      <div class="mb-6 border-b border-gray-200 pb-4 text-center">
-        <p class="text-gray-600 mb-2">নিচের ইনপুট ফিল্ড গুলো সিলেক্ট করে সাবমিট করুন</p>
-        <div class="flex items-center justify-center space-x-2 text-sm text-green-600 font-medium">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-          </svg>
-          <span>সর্বশেষ প্রশ্ন যুক্ত হয়েছে an hour ago</span>
-        </div>
-      </div>
+      
       
        <form @submit.prevent="generateQuestions" class="space-y-4">
                 <div>
@@ -220,13 +207,13 @@ const generateQuestions = () => {
                 </div>
         
         <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.01] transition-all duration-200">
-          প্রশ্ন তৈরী করুন
+          পরীক্ষা তৈরী করুন
         </button>
       </form>
     </div>
   </div>
 </div>
-    </UserDashboardLayout>
+    </AuthenticatedLayout>
 </template>
 <style scoped>
   @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;700&display=swap');

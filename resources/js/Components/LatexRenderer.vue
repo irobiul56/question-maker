@@ -1,54 +1,63 @@
 <script setup>
-import { onMounted, onUpdated, ref, watch } from 'vue';
+import { onMounted, ref, watch, nextTick } from 'vue';
 
 const props = defineProps({
   content: String
 });
 
 const container = ref(null);
-const mathjaxReady = ref(false);
+const isReady = ref(false);
+const renderedHtml = ref('');
 
-// Check if MathJax is loaded and ready
-const checkMathJax = () => {
-  if (window.MathJax && window.MathJaxLoaded) {
-    mathjaxReady.value = true;
-    return true;
-  }
-  return false;
+const getRenderedContent = () => {
+  if (!container.value) return props.content || '';
+  return container.value.innerHTML;
 };
 
-// Render function
-const renderMathJax = () => {
+const renderMath = async () => {
   if (!container.value || !props.content) return;
   
-  if (checkMathJax()) {
-    // Use TypesetPromise to ensure proper rendering
-    window.MathJax.typesetPromise([container.value]).catch(err => {
-      console.error('MathJax typeset error:', err);
-    });
+  if (window.MathJax && window.MathJax.typesetPromise) {
+    try {
+      await window.MathJax.typesetPromise([container.value]);
+      await nextTick();
+      // Store the rendered HTML
+      renderedHtml.value = container.value.innerHTML;
+      isReady.value = true;
+    } catch (err) {
+      console.error('MathJax error:', err);
+      renderedHtml.value = props.content;
+      isReady.value = true;
+    }
+  } else {
+    renderedHtml.value = props.content;
+    isReady.value = true;
   }
 };
 
-// Initial setup
-onMounted(() => {
-  if (checkMathJax()) {
-    renderMathJax();
+defineExpose({ getRenderedContent, renderMath, renderedHtml });
+
+onMounted(async () => {
+  if (window.MathJaxLoaded) {
+    await renderMath();
   } else {
-    // Listen for MathJax loaded event if not ready yet
-    document.addEventListener('mathjax-loaded', () => {
-      mathjaxReady.value = true;
-      renderMathJax();
+    window.addEventListener('mathjax-loaded', async () => {
+      await renderMath();
     });
   }
 });
 
-// Update when content changes
-watch(() => props.content, renderMathJax);
-
-// Also run on updates
-onUpdated(renderMathJax);
+watch(() => props.content, async () => {
+  isReady.value = false;
+  await nextTick();
+  await renderMath();
+});
 </script>
 
 <template>
-  <div ref="container" v-html="content"></div>
+  <div 
+    ref="container" 
+    v-html="content"
+    class="latex-renderer"
+  ></div>
 </template>

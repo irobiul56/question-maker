@@ -1,7 +1,7 @@
 <template>
     <Head title="User Dashboard" />
 
-    <UserDashboardLayout>
+    <AuthenticatedLayout>
         <!-- Loading Overlay -->
         <div v-if="loading" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
             <div class="bg-white p-4 rounded-lg shadow-lg">
@@ -25,17 +25,17 @@
 
                     <div class="flex items-center gap-2">
                         <button @click="saveQuestions"
-                            class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded">
-                            <span class="flex items-center gap-1">
-                                <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 448 512"
-                                    height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-                                    <path
-                                        d="M433.941 129.941l-83.882-83.882A48 48 0 0 0 316.118 32H48C21.49 32 0 53.49 0 80v352c0 26.51 21.49 48 48 48h352c26.51 0 48-21.49 48-48V163.882a48 48 0 0 0-14.059-33.941zM224 416c-35.346 0-64-28.654-64-64 0-35.346 28.654-64 64-64s64 28.654 64 64c0 35.346-28.654 64-64 64zm96-304.52V212c0 6.627-5.373 12-12 12H76c-6.627 0-12-5.373-12-12V108c0-6.627 5.373-12 12-12h228.52c3.183 0 6.235 1.264 8.485 3.515l3.48 3.48A11.996 11.996 0 0 1 320 111.48z">
-                                    </path>
-                                </svg>
-                                Save as "{{ examName }}"
-                            </span>
-                        </button>
+                    class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded">
+                    <span class="flex items-center gap-1">
+                        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 448 512"
+                            height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M433.941 129.941l-83.882-83.882A48 48 0 0 0 316.118 32H48C21.49 32 0 53.49 0 80v352c0 26.51 21.49 48 48 48h352c26.51 0 48-21.49 48-48V163.882a48 48 0 0 0-14.059-33.941zM224 416c-35.346 0-64-28.654-64-64 0-35.346 28.654-64 64-64s64 28.654 64 64c0 35.346-28.654 64-64 64zm96-304.52V212c0 6.627-5.373 12-12 12H76c-6.627 0-12-5.373-12-12V108c0-6.627 5.373-12 12-12h228.52c3.183 0 6.235 1.264 8.485 3.515l3.48 3.48A11.996 11.996 0 0 1 320 111.48z">
+                            </path>
+                        </svg>
+                        ব্লগ সংরক্ষণ করুন
+                    </span>
+                </button>
                     </div>
                 </div>
 
@@ -128,7 +128,7 @@
                                 <!-- CQ Options -->
                                 <div v-if="question.format === 'cq' && question.cqoptions"
                                     class="lg:grid grid-cols-1 gap-2">
-                                    <div v-for="(cqoption, optIndex) in question.cqoptions" :key="cqoption.id"
+                                    <div v-for="cqoption in question.cqoptions" :key="cqoption.id"
                                         class="bg-gray-100 my-2 lg:m-0 rounded-lg p-2 flex gap-1 items-center">
                                         <div class="flex items-center justify-center h-5 w-5 border border-gray-400 rounded-full p-0.5">
                                             {{ bengaliChars[question.cqoptions.indexOf(cqoption)] }}
@@ -386,13 +386,74 @@
                                         </label>
                                     </div>
                                 </div>
+
+                                 <!-- Blog Filter Section -->
+                    <div class="bg-white border rounded-lg my-4">
+                        <div class="bg-gray-100 p-2">
+                            <p class="font-bold">ব্লগ তথ্য</p>
+                        </div>
+                        <div class="border-t p-4">
+                            <div class="space-y-4">
+                                <!-- Title Input -->
+                                <div>
+                                    <label for="blog_title" class="block text-sm font-medium text-gray-700 mb-1">
+                                        শিরোনাম <span class="text-red-500">*</span>
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        id="blog_title"
+                                        v-model="blogTitle"
+                                        placeholder="ব্লগের শিরোনাম লিখুন..."
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        :class="{ 'border-red-500': titleError }"
+                                    >
+                                    <p v-if="titleError" class="text-red-500 text-xs mt-1">শিরোনাম প্রদান করা আবশ্যক</p>
+                                </div>
+
+                                <!-- Description Textarea -->
+                                <div>
+                                    <label for="blog_description" class="block text-sm font-medium text-gray-700 mb-1">
+                                        বিবরণ <span class="text-red-500">*</span>
+                                    </label>
+                                    <textarea 
+                                        id="blog_description"
+                                        v-model="blogDescription"
+                                        rows="4"
+                                        placeholder="ব্লগের বিবরণ লিখুন..."
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
+                                        :class="{ 'border-red-500': descriptionError }"
+                                    ></textarea>
+                                    <p v-if="descriptionError" class="text-red-500 text-xs mt-1">বিবরণ প্রদান করা আবশ্যক</p>
+                                </div>
+
+                                  <!-- Category Selection -->
+                                    <div>
+                                    <label for="blog_category" class="block text-sm font-medium text-gray-700 mb-1">
+                                        ক্যাটাগরি <span class="text-red-500">*</span>
+                                    </label>
+                                    <select 
+                                        id="blog_category"
+                                        v-model="blogCategory"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        :class="{ 'border-red-500': categoryError }"
+                                    >
+                                        <option value="">ক্যাটাগরি নির্বাচন করুন...</option>
+                                        <option v-for="category in categories" :key="category.id" :value="category.id">
+                                            {{ category.name }}
+                                        </option>
+                                    </select>
+                                    <p v-if="categoryError" class="text-red-500 text-xs mt-1">ক্যাটাগরি নির্বাচন করা আবশ্যক</p>
+                                </div>
+                                    </div>
+                                </div>
+                            </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </UserDashboardLayout>
+    </AuthenticatedLayout>
 </template>
 
 <style scoped>
@@ -411,7 +472,7 @@
 
 <script setup>
 import LatexRenderer from '@/Components/LatexRenderer.vue';
-import UserDashboardLayout from '@/Layouts/UserDashboardLayout.vue';
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue"
 import { Head } from '@inertiajs/vue3';
 import { router, usePage } from '@inertiajs/vue3';
 import { ref, watch, computed } from 'vue';
@@ -425,6 +486,7 @@ const props = defineProps({
     boards: Array,
     quetype: Array,
     level: Array,
+    categories: Array,
 });
 
 const examName = computed(() => {
@@ -494,7 +556,7 @@ watch([selectedTopics, selectedBoards, selectedYears, selectedQuestionTypes, sel
     ([newTopics, newBoards, newYears, newQuestionTypes, newLevels]) => {
         loading.value = true;
 
-        router.get(route('sltquestion'), {
+        router.get(route('sltquestionblog'), {
             chapter_id: filters.value.chapter_id,
             topic_id: newTopics,
             type: filters.value.type,
@@ -614,24 +676,6 @@ const toggleSelectAll = () => {
     }
 };
 
-const saveQuestions = () => {
-    if (selectedQuestions.value.length === 0) {
-        alert('Please select at least one question');
-        return;
-    }
-
-    router.post(route('save.questions'), {
-        question_ids: selectedQuestions.value,
-        exam_name: examName.value,
-    }, {
-        preserveScroll: true,
-        onSuccess: () => {
-            selectedQuestions.value = [];
-            isSelectAll.value = false;
-        }
-    });
-};
-
 // Watch for props changes to update local state
 watch(() => props.questions, (newQuestions) => {
     questions.value = (newQuestions || []).map(q => ({
@@ -651,5 +695,68 @@ watch(() => props.filters, (newFilters) => {
 watch(() => props.chapters, (newChapters) => {
     chapters.value = newChapters || [];
 }, { immediate: true });
+
+
+const blogTitle = ref('');
+const blogDescription = ref('');
+const blogCategory = ref('');
+const titleError = ref(false);
+const descriptionError = ref(false);
+
+// Helper to get question preview
+const getQuestionPreview = (questionId) => {
+    const question = questions.value.find(q => q.id === questionId);
+    if (question) {
+        // Get first 50 characters of question text
+        const preview = question.question_text.replace(/<[^>]*>/g, '').substring(0, 50);
+        return preview + (preview.length === 50 ? '...' : '');
+    }
+    return 'Question';
+};
+
+const clearSelectedQuestions = () => {
+    selectedQuestions.value = [];
+    isSelectAll.value = false;
+};
+
+const saveQuestions = () => {
+    // Validate blog information
+    titleError.value = !blogTitle.value.trim();
+    descriptionError.value = !blogDescription.value.trim();
+    
+    if (titleError.value || descriptionError.value) {
+        alert('অনুগ্রহ করে ব্লগের শিরোনাম এবং বিবরণ প্রদান করুন');
+        return;
+    }
+    
+    if (selectedQuestions.value.length === 0) {
+        alert('অনুগ্রহ করে কমপক্ষে একটি প্রশ্ন নির্বাচন করুন');
+        return;
+    }
+
+    router.post(route('save.questions.blog'), {
+        question_ids: selectedQuestions.value,
+        exam_name: examName.value,
+        blog_title: blogTitle.value,
+        blog_description: blogDescription.value,
+        blog_category: blogCategory.value,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            // Reset form after successful save
+            selectedQuestions.value = [];
+            isSelectAll.value = false;
+            blogTitle.value = '';
+            blogCategory.value = '';
+            blogDescription.value = '';
+            titleError.value = false;
+            descriptionError.value = false;
+            categoryError.value = false;
+            
+            // Optional: Show success message
+            alert('ব্লগ সফলভাবে সংরক্ষণ করা হয়েছে!');
+        }
+    });
+};
 
 </script>

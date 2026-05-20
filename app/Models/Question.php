@@ -58,5 +58,10 @@ class Question extends Model
     {
         return $this->belongsToMany(SavedQuestion::class, 'question_savedquestion');
     }
+
+    public function blogs()
+    {
+        return $this->belongsToMany(Blog::class);
+    }
     
 }

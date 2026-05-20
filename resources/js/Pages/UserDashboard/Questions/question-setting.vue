@@ -5,7 +5,7 @@ import { Head } from '@inertiajs/vue3';
 import { ref, onMounted, computed, nextTick } from 'vue';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-
+``
 const props = defineProps({
     savedquestion: {
         type: Array,
@@ -158,107 +158,99 @@ const printQuestions = async () => {
     printError.value = false;
     
     try {
-        // Get all style tags from the document
-        const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-            .map(style => style.outerHTML)
-            .join('\n');
+        // Force MathJax to complete rendering
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            await window.MathJax.typesetPromise();
+            await new Promise(r => setTimeout(r, 300));
+        }
         
-        // Get current settings
+        // Create a temporary container for printing
+        const printContainer = document.createElement('div');
+        printContainer.className = 'print-only-container';
+        
+        // Clone the questions container
+        const questionsContainer = document.getElementById('questions-container');
+        const clone = questionsContainer.cloneNode(true);
+        
+        // Get current styles and settings
         const currentFontClass = fontClasses[selectedFont.value];
         const currentFontSize = `${fontSize.value}px`;
         const columnGap = showColumnDivider.value ? '1.5rem' : '0.5rem';
         const columnRule = showColumnDivider.value ? '1px solid rgba(0, 0, 0, 0.2)' : 'none';
         
-        // Create a clone of the questions container
-        const element = document.getElementById('questions-container');
-        const clone = element.cloneNode(true);
-        
-        // Remove any existing column styles from the clone
+        // Apply column styles to clone
         const questionContent = clone.querySelector('.question-content > div');
         if (questionContent) {
-            questionContent.style.columnCount = '';
-            questionContent.style.columnGap = '';
-            questionContent.style.columnRule = '';
+            questionContent.style.columnCount = columnCount.value;
+            questionContent.style.columnGap = columnGap;
+            questionContent.style.columnRule = columnRule;
         }
         
-        // Create print HTML with proper column styles
-        const printHTML = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Print Questions</title>
-                <meta charset="UTF-8">
-                ${styles}
-                <style>
-                    @page {
-                        size: A4;
-                        margin: 10mm;
-                    }
-                    body {
-                        margin: 0;
-                        padding: 10mm;
-                        background: white !important;
-                        font-size: ${currentFontSize} !important;
-                    }
-                    .question-content > div {
-                        column-count: ${columnCount.value} !important;
-                        column-gap: ${columnGap} !important;
-                        column-rule: ${columnRule} !important;
-                    }
-                    .break-inside-avoid {
-                        page-break-inside: avoid !important;
-                        break-inside: avoid !important;
-                    }
-                    .print-font-inherit {
-                        font-family: inherit !important;
-                        font-size: inherit !important;
-                    }
-                </style>
-            </head>
-            <body class="${currentFontClass} print-font-inherit" style="font-size: ${currentFontSize} !important;">
-                ${clone.outerHTML}
-            </body>
-            </html>
+        // Apply font to clone
+        clone.className = `${currentFontClass} question-text`;
+        clone.style.fontSize = currentFontSize;
+        
+        printContainer.appendChild(clone);
+        
+        // Add print-specific styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @media print {
+                body * {
+                    visibility: hidden;
+                }
+                .print-only-container,
+                .print-only-container * {
+                    visibility: visible;
+                }
+                .print-only-container {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    width: 100%;
+                    margin: 0;
+                    padding: 10mm;
+                    background: white;
+                    z-index: 99999;
+                }
+                .question-content > div {
+                    column-count: ${columnCount.value} !important;
+                    column-gap: ${columnGap} !important;
+                    column-rule: ${columnRule} !important;
+                }
+                .break-inside-avoid {
+                    page-break-inside: avoid;
+                    break-inside: avoid;
+                }
+                mjx-container {
+                    display: inline-block !important;
+                }
+                .latex-renderer {
+                    display: inline;
+                }
+                @page {
+                    size: A4;
+                    margin: 10mm;
+                }
+            }
         `;
         
-        // Create and configure the iframe
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = 'none';
+        document.head.appendChild(style);
+        document.body.appendChild(printContainer);
         
-        document.body.appendChild(iframe);
+        // Small delay to ensure everything is rendered
+        await new Promise(r => setTimeout(r, 100));
         
-        // Wait for iframe to load
-        await new Promise(resolve => {
-            iframe.onload = resolve;
-            iframe.srcdoc = printHTML;
-        });
-        
-        // Wait for layout to stabilize
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Focus and print
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
+        // Trigger print
+        window.print();
         
         // Clean up
-        const cleanUp = () => {
-            document.body.removeChild(iframe);
+        setTimeout(() => {
+            document.body.removeChild(printContainer);
+            document.head.removeChild(style);
             isPrinting.value = false;
-        };
-        
-        if (iframe.contentWindow.matchMedia) {
-            const mediaQueryList = iframe.contentWindow.matchMedia('print');
-            mediaQueryList.addListener((mql) => {
-                if (!mql.matches) cleanUp();
-            });
-        }
-        
-        setTimeout(cleanUp, 3000);
+        }, 100);
         
     } catch (error) {
         console.error('Print failed:', error);
@@ -348,7 +340,7 @@ onMounted(() => {
                             <p class="text-center text-lg">{{ localQuestions[0]?.exam_name }}</p>
                             <p class="text-center text-lg">{{ localQuestions[0]?.questions[0]?.academic_class?.name }}</p>
                             <p v-if="subject" class="text-center truncate">{{ localQuestions[0]?.questions[0]?.subject?.name }}</p>
-                            <p v-if="chapter" class="text-center truncate">{{ localQuestions[0]?.questions[0]?.chapter?.name || '' }}</p>
+                    
                             <!-- Set indicator -->
                             <div v-if="setcode" class="absolute top-0 right-0 flex">
                                 <p class="border px-2 border-gray-500">সেট</p>
@@ -988,6 +980,22 @@ button[disabled] {
     .print-font-inherit * {
         font-family: inherit !important;
         font-size: inherit !important;
+    }
+}
+
+@media print {
+    /* Ensure MathJax renders in print */
+    mjx-container {
+        display: inline-block !important;
+    }
+    
+    .latex-renderer {
+        display: inline;
+    }
+    
+    /* Force MathJax to render */
+    .MathJax, .MathJax_CHTML {
+        display: inline-block !important;
     }
 }
 

@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\BoardController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\ContactUsController;
 use App\Http\Controllers\EducationLevelController;
+use App\Http\Controllers\ExamBlogController;
 use App\Http\Controllers\FrontendController;
 use App\Http\Controllers\LevelController;
 use App\Http\Controllers\ProfileController;
@@ -13,16 +15,31 @@ use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\TopicController;
 use App\Http\Controllers\TypeController;
 use App\Http\Controllers\MyQuestionController;
+use App\Models\Blog;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
+     $bloglist = Blog::with([
+                'category',
+                'questions' => function($query) {
+                    $query->with([
+                        'academicClass',
+                        'subject',
+                        'lavel',
+                        'options'
+                        ])
+                        ->get();
+                }
+            ])->orderBy('id', 'desc')->get();
+
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
+        'bloglist' => $bloglist
     ]);
 });
 
@@ -33,6 +50,7 @@ Route::middleware(['auth','admin']) -> group(function () {
         
         Route::prefix('settings')->group(function () {
         Route::resource('board', BoardController::class);
+        Route::resource('category', CategoryController::class);
         Route::resource('level', LevelController::class);
         Route::resource('type', TypeController::class);
         Route::resource('education', EducationLevelController::class);
@@ -45,6 +63,10 @@ Route::middleware(['auth','admin']) -> group(function () {
         Route::resource('question', QuestionController::class);
         });
         
+        Route::get('/blog-post-form', [ExamBlogController::class, 'blogexamform'])->name('blogexamform');
+        Route::get('/selected-question-blog', [ExamBlogController::class, 'sltquestionblog'])->name('sltquestionblog');
+        Route::post('/save-questions-blog', [ExamBlogController::class, 'saveQuestionsBlog'])->name('save.questions.blog');
+        Route::get('blog-list', [ExamBlogController::class, 'BlogList'])->name('blog.list');
     });
     
 
