@@ -213,6 +213,64 @@ public function sltquestionblog(Request $request)
     }
 }
 
+public function onlineexamshow($slug)
+    {
+        $blog = Blog::where('slug', $slug)
+            ->with([
+                'category',
+                'questions',
+                'questions.academicClass',
+                'questions.subject',
+                'questions.chapter',
+                'questions.options'
+            ])
+            ->firstOrFail();
+
+        // Optional: Transform the data to ensure proper structure
+        $blogData = [
+            'id' => $blog->id,
+            'title' => $blog->title,
+            'slug' => $blog->slug,
+            'description' => $blog->description,
+            'created_at' => $blog->created_at,
+            'updated_at' => $blog->updated_at,
+            'category' => $blog->category ? [
+                'id' => $blog->category->id,
+                'name' => $blog->category->name,
+                'slug' => $blog->category->slug,
+            ] : null,
+            'questions' => $blog->questions->map(function($question) {
+                return [
+                    'id' => $question->id,
+                    'question_text' => $question->question_text,
+                    'format' => $question->format ?? 'mcq',
+                    'academic_class' => $question->academic_class ? [
+                        'id' => $question->academic_class->id,
+                        'name' => $question->academic_class->name,
+                    ] : null,
+                    'subject' => $question->subject ? [
+                        'id' => $question->subject->id,
+                        'name' => $question->subject->name,
+                    ] : null,
+                    'chapter' => $question->chapter ? [
+                        'id' => $question->chapter->id,
+                        'name' => $question->chapter->name,
+                    ] : null,
+                    'options' => $question->options->map(function($option) {
+                        return [
+                            'id' => $option->id,
+                            'option_text' => $option->option_text,
+                            'is_correct' => (bool) $option->is_correct,
+                        ];
+                    }),
+                ];
+            }),
+        ];
+
+        return Inertia::render('Blog/Show', [
+            'blog' => $blogData,
+        ]);
+    }
 
     //Question Setting
    public function qstSetting(Request $request, $exam_id = null)

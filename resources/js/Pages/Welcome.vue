@@ -745,6 +745,9 @@ const formatDate = (dateString) => {
                   <p class="text-sm font-black text-slate-800 tracking-tight">{{ item.questions.length }} MCQ</p>
                 </div>
                 <div class="flex gap-2">
+                  <Link :href="route('onlineexamshow', item.slug )" type="buttom"
+                    class="px-5 py-1.5 text-[11px] font-bold bg-emerald-100 text-black rounded-lg shadow-sm shadow-indigo-200 hover:bg-emerald-300 active:scale-95 transition-all"> View
+                  </Link>
                   <button @click="openExamModal(item)" type="button"
                     class="px-5 py-1.5 text-[11px] font-bold text-white bg-indigo-600 rounded-lg shadow-sm shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all">
                     Start
