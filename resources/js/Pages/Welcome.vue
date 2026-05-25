@@ -1,4 +1,5 @@
 <script setup>
+import AppLayout from "@/Layouts/AppLayout.vue";
 import { Head, Link } from '@inertiajs/vue3';
 import LatexRenderer from '@/Components/LatexRenderer.vue';
 import { ref, computed, watch, nextTick } from 'vue';
@@ -360,6 +361,7 @@ const formatDate = (dateString) => {
 </script>
 
 <template>
+  <AppLayout>
   <Head title="Welcome" />
   <div class="bg-gray-50 text-black/50 dark:bg-black dark:text-white/50 hind-siliguri-light">
     <section class="relative py-16 bg-gray-50 overflow-hidden">
@@ -1001,6 +1003,7 @@ const formatDate = (dateString) => {
       </div>
     </div>
   </div>
+  </AppLayout>
 </template>
 
 <style scoped>

@@ -41,7 +41,7 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
         'bloglist' => $bloglist
     ]);
-});
+})->name('home');
 
 Route::get('/online-exam/{slug}', [ExamBlogController::class, 'onlineexamshow'])->name('onlineexamshow');
 

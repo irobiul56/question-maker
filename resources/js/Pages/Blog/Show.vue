@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
+import AppLayout from '@/Layouts/AppLayout.vue'
 import LatexRenderer from '@/Components/LatexRenderer.vue';
 import { ref, computed, watch, nextTick } from 'vue';
 import { usePage } from '@inertiajs/vue3';
@@ -282,6 +283,7 @@ const formatDate = (dateString) => {
 </script>
 
 <template>
+  <AppLayout>
   <Head :title="blog?.title || 'Exam Details'" />
   
   <div class="bg-gray-50 min-h-screen hind-siliguri-light">
@@ -605,6 +607,7 @@ const formatDate = (dateString) => {
       </div>
     </div>
   </div>
+  </AppLayout>
 </template>
 
 <style scoped>
