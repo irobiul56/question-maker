@@ -309,4 +309,23 @@ public function updateIn(Request $request)
             ]);
     }
 
+
+    // Contact Us page
+    public function contact() {
+        return Inertia::render('ContactUs');
+    }
+    // About Us page
+    public function about() {
+        return Inertia::render('About');
+    }
+    // Terms of service page
+    public function tos() {
+        return Inertia::render('Tos');
+    }
+    // About Us page
+    public function privacypolicy() {
+        return Inertia::render('PrivacyPolicy');
+    }
+    
+
 }

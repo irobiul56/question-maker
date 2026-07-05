@@ -69,7 +69,7 @@
           <h4 class="text-lg font-bold mb-4">Menu</h4>
           <ul class="space-y-2 text-gray-400">
             <li>
-              <Link class="hover:text-green-400 transition duration-150 flex items-center">
+              <Link :href="route('home')" class="hover:text-green-400 transition duration-150 flex items-center">
                 <svg class="w-3 h-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
@@ -77,23 +77,16 @@
               </Link>
             </li>
             <li>
-              <Link  class="hover:text-green-400 transition duration-150 flex items-center">
+              <Link :href="route('about')" class="hover:text-green-400 transition duration-150 flex items-center">
                 <svg class="w-3 h-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
                 About Us
               </Link>
             </li>
+            
             <li>
-              <Link  class="hover:text-green-400 transition duration-150 flex items-center">
-                <svg class="w-3 h-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-                Activities
-              </Link>
-            </li>
-            <li>
-              <Link  class="hover:text-green-400 transition duration-150 flex items-center">
+              <Link :href="route('home') + '#onlineexam'" class="hover:text-green-400 transition duration-150 flex items-center">
                 <svg class="w-3 h-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
@@ -108,37 +101,32 @@
           <h4 class="text-lg font-bold mb-4">Join</h4>
           <ul class="space-y-2 text-gray-400">
             <li>
-              <Link href="/join/donor" class="hover:text-green-400 transition duration-150 flex items-center">
+              <Link :href="route('register')" class="hover:text-green-400 transition duration-150 flex items-center">
                 <svg class="w-3 h-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
-                Regular Donor Member
+                Register
               </Link>
             </li>
+
             <li>
-              <Link href="/join/lifetime" class="hover:text-green-400 transition duration-150 flex items-center">
+              <a href="https://www.facebook.com/LearnAndTeachBangla" class="hover:text-green-400 transition duration-150 flex items-center">
                 <svg class="w-3 h-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
-                Lifetime and Donor Members
-              </Link>
+                Facebook
+              </a>
             </li>
+
             <li>
-              <Link href="/join/volunteer" class="hover:text-green-400 transition duration-150 flex items-center">
+              <a href="https://www.youtube.com/@LearnandTeachbd" class="hover:text-green-400 transition duration-150 flex items-center">
                 <svg class="w-3 h-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
-                Volunteer
-              </Link>
+                YouTube
+              </a>
             </li>
-            <li>
-              <Link href="/careers" class="hover:text-green-400 transition duration-150 flex items-center">
-                <svg class="w-3 h-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-                Career
-              </Link>
-            </li>
+            
           </ul>
         </div>
 
@@ -147,7 +135,7 @@
           <h4 class="text-lg font-bold mb-4">Other</h4>
           <ul class="space-y-2 text-gray-400">
             <li>
-              <Link class="hover:text-green-400 transition duration-150 flex items-center">
+              <Link :href="route('contact')" class="hover:text-green-400 transition duration-150 flex items-center">
                 <svg class="w-3 h-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
@@ -155,7 +143,7 @@
               </Link>
             </li>
             <li>
-              <Link class="hover:text-green-400 transition duration-150 flex items-center">
+              <Link :href="route('tos')" class="hover:text-green-400 transition duration-150 flex items-center">
                 <svg class="w-3 h-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
@@ -163,21 +151,14 @@
               </Link>
             </li>
             <li>
-              <Link href="/privacy" class="hover:text-green-400 transition duration-150 flex items-center">
+              <Link :href="route('privacypolicy')" class="hover:text-green-400 transition duration-150 flex items-center">
                 <svg class="w-3 h-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
                 Privacy Policy
               </Link>
             </li>
-            <li>
-              <Link href="/sitemap" class="hover:text-green-400 transition duration-150 flex items-center">
-                <svg class="w-3 h-3 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-                Sitemap
-              </Link>
-            </li>
+            
           </ul>
         </div>
 
@@ -193,7 +174,7 @@
         <!-- Social Media Links -->
         <div class="flex space-x-4 text-2xl">
           <a 
-            href="https://facebook.com/jagoroni" 
+            href="https://www.facebook.com/LearnAndTeachBangla" 
             target="_blank" 
             rel="noopener noreferrer"
             class="hover:text-green-400 transition duration-150 transform hover:scale-110"
@@ -202,7 +183,7 @@
             <i class="fab fa-facebook"></i>
           </a>
           <a 
-            href="https://youtube.com/jagoroni" 
+            href="https://www.youtube.com/@LearnandTeachbd" 
             target="_blank" 
             rel="noopener noreferrer"
             class="hover:text-green-400 transition duration-150 transform hover:scale-110"
@@ -211,7 +192,7 @@
             <i class="fab fa-youtube"></i>
           </a>
           <a 
-            href="https://twitter.com/jagoroni" 
+            href="#" 
             target="_blank" 
             rel="noopener noreferrer"
             class="hover:text-green-400 transition duration-150 transform hover:scale-110"
@@ -220,7 +201,7 @@
             <i class="fab fa-x-twitter"></i>
           </a>
           <a 
-            href="https://linkedin.com/company/jagoroni" 
+            href="#" 
             target="_blank" 
             rel="noopener noreferrer"
             class="hover:text-green-400 transition duration-150 transform hover:scale-110"
@@ -229,7 +210,7 @@
             <i class="fab fa-linkedin"></i>
           </a>
           <a 
-            href="https://instagram.com/jagoroni" 
+            href="#" 
             target="_blank" 
             rel="noopener noreferrer"
             class="hover:text-green-400 transition duration-150 transform hover:scale-110"

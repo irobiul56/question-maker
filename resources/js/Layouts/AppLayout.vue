@@ -24,32 +24,24 @@
                 </Link>
               </li>
               <li>
-                <Link  class="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg" :class="{ 'text-blue-600 border-b-2 border-blue-600': $page.url === '/about' }">
+                <Link :href="route('about')" class="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg" :class="{ 'text-blue-600 border-b-2 border-blue-600': $page.url === '/about-us' }">
                   About Us
                 </Link>
               </li>
+              
               <li>
-                <Link  class="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg" :class="{ 'text-blue-600 border-b-2 border-blue-600': $page.url === '/our-activities' }">
-                  Activities
+                <Link :href="route('qstIndex')" class="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg" :class="{ 'text-blue-600 border-b-2 border-blue-600': $page.url === '/gallery' }">
+                  Question Making
                 </Link>
               </li>
               <li>
-                <Link  class="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg" :class="{ 'text-blue-600 border-b-2 border-blue-600': $page.url === '/gallery' }">
-                  Gallery
-                </Link>
-              </li>
-              <li>
-                <Link  class="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg" :class="{ 'text-blue-600 border-b-2 border-blue-600': $page.url === '/blog' }">
+                <Link :href="route('home') + '#onlineexam'" class="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg" :class="{ 'text-blue-600 border-b-2 border-blue-600': $page.url === '/'+'#onlineexam' }">
                   Model Test
                 </Link>
               </li>
+              
               <li>
-                <Link  class="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg" :class="{ 'text-blue-600 border-b-2 border-blue-600': $page.url === '/notice' }">
-                  Notice
-                </Link>
-              </li>
-              <li>
-                <Link class="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg" :class="{ 'text-blue-600 border-b-2 border-blue-600': $page.url === '/contact' }">
+                <Link :href="route('contact')"  class="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg" :class="{ 'text-blue-600 border-b-2 border-blue-600': $page.url === '/contact-us' }">
                   Contact
                 </Link>
               </li>
@@ -87,10 +79,7 @@
               </svg>
             </Link>
 
-            <!-- Donate Button -->
-            <Link class="px-3 py-1.5 text-sm font-semibold text-white bg-green-600 rounded-md shadow-lg hover:bg-red-700 transition duration-150 flex-shrink-0">
-              Donation
-            </Link>
+           
 
             <!-- Mobile Menu Button -->
             <button 

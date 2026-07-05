@@ -1,13 +1,16 @@
 <?php
 
+use App\Http\Controllers\AcademicYearController;
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\ContactUsController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EducationLevelController;
 use App\Http\Controllers\ExamBlogController;
 use App\Http\Controllers\FrontendController;
+use App\Http\Controllers\InstituteClassController;
 use App\Http\Controllers\LevelController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuestionController;
@@ -15,6 +18,7 @@ use App\Http\Controllers\SubjectController;
 use App\Http\Controllers\TopicController;
 use App\Http\Controllers\TypeController;
 use App\Http\Controllers\MyQuestionController;
+use App\Http\Controllers\InstituteController;
 use App\Models\Blog;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -44,6 +48,10 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/online-exam/{slug}', [ExamBlogController::class, 'onlineexamshow'])->name('onlineexamshow');
+Route::get('/contact-us', [FrontendController::class, 'contact'])->name('contact');
+Route::get('/about-us', [FrontendController::class, 'about'])->name('about');
+Route::get('/terms-of-service', [FrontendController::class, 'tos'])->name('tos');
+Route::get('/privacy-policy', [FrontendController::class, 'privacypolicy'])->name('privacypolicy');
 
 Route::middleware(['auth','admin']) -> group(function () {
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -82,6 +90,13 @@ Route::middleware(['auth','admin']) -> group(function () {
     //Dashboard
     Route::get('/dashboard', [FrontendController::class, 'userdashboard'])->name('userdashboard');
     Route::put('/institute/update', [FrontendController::class, 'updateIn'])->name('institute.update');
+    Route::get('/institute', [InstituteController::class, 'institute'])->name('institute');
+
+    Route::get('/institute/dashboard', [DashboardController::class, 'index'])->name('institute.dashboard');
+    Route::get('/institute/dashboard/stats', [DashboardController::class, 'stats'])->name('institute.dashboard.stats');
+    Route::get('/institute/dashboard/chart-data', [DashboardController::class, 'chartData'])->name('institute.dashboard.chart-data');
+    Route::get('/institute/dashboard/recent-activities', [DashboardController::class, 'recentActivities'])->name('institute.dashboard.recent-activities');
+
 
     // Question routes
     Route::get('/question-making', [FrontendController::class, 'qstIndex'])->name('qstIndex');
@@ -93,7 +108,35 @@ Route::middleware(['auth','admin']) -> group(function () {
     Route::get('/contact-us', [ContactUsController::class, 'contactus'])->name('contactus');
     Route::get('/opinion', [ContactUsController::class, 'opinion'])->name('opinion');
 
+
+    // Academic Years Routes
+    Route::resource('academic-years', AcademicYearController::class);
+
+    // Additional routes
+    Route::prefix('academic-years')->name('academic-years.')->middleware(['auth', 'verified'])->group(function () {
+        Route::post('/{academicYear}/set-current', [AcademicYearController::class, 'setCurrent'])
+            ->name('set-current');
+        Route::get('/current', [AcademicYearController::class, 'getCurrent'])
+            ->name('get-current');
+        Route::get('/list', [AcademicYearController::class, 'getYears'])
+            ->name('list');
+
+    });
+
+    // Classes Routes
+Route::resource('classes', InstituteClassController::class)
+    ->middleware(['auth', 'verified']);
+
+// Additional routes
+Route::prefix('classes')->name('classes.')->middleware(['auth', 'verified'])->group(function () {
+    Route::get('/get-classes', [InstituteClassController::class, 'getClasses'])
+        ->name('get-classes');
+    Route::get('/{classId}/sections', [InstituteClassController::class, 'getSections'])
+        ->name('get-sections');
+    Route::get('/stats', [InstituteClassController::class, 'getStats'])
+        ->name('stats');
 });
 
+});
 require __DIR__.'/auth.php';
 

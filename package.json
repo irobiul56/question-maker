@@ -20,11 +20,14 @@
         "vue": "^3.4.0"
     },
     "dependencies": {
+        "@formkit/vue": "^2.1.0",
         "@inertiajs/inertia": "^0.11.1",
         "@inertiajs/inertia-vue3": "^0.6.0",
+        "chart.js": "^4.5.1",
         "element-plus": "^2.9.9",
         "html2canvas": "^1.4.1",
         "jspdf": "^3.0.1",
-        "katex": "^0.16.22"
+        "katex": "^0.16.22",
+        "vue-chartjs": "^5.3.3"
     }
 }
